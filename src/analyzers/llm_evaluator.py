@@ -101,10 +101,10 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
             self.model = model or "deepseek-chat"
         elif backend == LLMBackend.OLLAMA:
             self.endpoint = endpoint or "http://localhost:11434/api/generate"
-            self.model = model or "qwen3-4b"
+            self.model = model or "Qwen/qwen3-4B-Instruct-2507"
         elif backend == LLMBackend.VLLM:
             self.endpoint = endpoint or "http://localhost:8000/v1/chat/completions"
-            self.model = model or "qwen3-4B-Instruct-2507"
+            self.model = model or "Qwen/qwen3-4B-Instruct-2507"
         elif backend == LLMBackend.GEMINI:
             self.endpoint = endpoint or "https://generativelanguage.googleapis.com/v1beta/models"
             self.model = model or "gemini-2.5-flash-lite"

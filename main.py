@@ -90,7 +90,8 @@ Examples:
     # Output options
     parser.add_argument(
         "--output", "-o",
-        help="Output report file path (also prints to stdout)"
+        default="report.txt",
+        help="Output report file path (default: report.txt)"
     )
     parser.add_argument(
         "--quiet", "-q",
