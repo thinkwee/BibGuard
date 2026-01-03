@@ -41,6 +41,8 @@ env/
 # Project Specific Outputs
 *.txt
 *_only_used_entry.bib
+report.md
+.cache/
 
 # LaTeX and Bibliography (User Data)
 # Ignoring these to prevent committing personal paper content

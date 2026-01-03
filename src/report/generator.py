@@ -1,9 +1,10 @@
 """
 Report generator for bibliography check results.
+Outputs native Markdown format for better readability.
 """
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
 from ..parsers.bib_parser import BibEntry
@@ -11,6 +12,9 @@ from ..analyzers.metadata_comparator import ComparisonResult
 from ..analyzers.usage_checker import UsageResult
 from ..analyzers.llm_evaluator import EvaluationResult
 from ..analyzers.duplicate_detector import DuplicateGroup
+from ..analyzers.field_completeness_checker import FieldCompletenessResult
+from ..analyzers.url_validator import URLValidationResult
+from ..analyzers.venue_normalizer import VenueNormalizationResult
 
 
 @dataclass
@@ -19,16 +23,19 @@ class EntryReport:
     entry: BibEntry
     comparison: Optional[ComparisonResult]
     usage: Optional[UsageResult]
-    evaluations: list[EvaluationResult]
+    evaluations: List[EvaluationResult]
 
 
 class ReportGenerator:
-    """Generates formatted text reports."""
+    """Generates formatted Markdown reports."""
     
     def __init__(self):
-        self.entries: list[EntryReport] = []
-        self.missing_citations: list[str] = []
-        self.duplicate_groups: list[DuplicateGroup] = []
+        self.entries: List[EntryReport] = []
+        self.missing_citations: List[str] = []
+        self.duplicate_groups: List[DuplicateGroup] = []
+        self.field_results: List[FieldCompletenessResult] = []
+        self.url_results: List[URLValidationResult] = []
+        self.venue_results: List[VenueNormalizationResult] = []
         self.bib_file: str = ""
         self.tex_file: str = ""
     
@@ -41,79 +48,92 @@ class ReportGenerator:
         self.bib_file = bib_file
         self.tex_file = tex_file
     
-    def set_missing_citations(self, missing: list[str]):
+    def set_missing_citations(self, missing: List[str]):
         """Set list of citations without bib entries."""
         self.missing_citations = missing
     
-    def set_duplicate_groups(self, groups: list[DuplicateGroup]):
+    def set_duplicate_groups(self, groups: List[DuplicateGroup]):
         """Set list of duplicate entry groups."""
         self.duplicate_groups = groups
     
+    def set_field_completeness_results(self, results: List[FieldCompletenessResult]):
+        """Set field completeness check results."""
+        self.field_results = results
+    
+    def set_url_validation_results(self, results: List[URLValidationResult]):
+        """Set URL validation results."""
+        self.url_results = results
+    
+    def set_venue_normalization_results(self, results: List[VenueNormalizationResult]):
+        """Set venue normalization results."""
+        self.venue_results = results
+    
     def generate(self) -> str:
-        """Generate the full text report."""
-        lines = []
+        """Generate the full Markdown report."""
+        sections = []
         
         # Header
-        lines.extend(self._generate_header())
-        lines.append("")
+        sections.append(self._generate_header())
         
-        # Summary statistics
-        lines.extend(self._generate_summary())
-        lines.append("")
+        # Summary table
+        sections.append(self._generate_summary())
         
-        # Duplicate detection
+        # Duplicates
         if self.duplicate_groups:
-            lines.extend(self._generate_duplicates_section())
-            lines.append("")
+            sections.append(self._generate_duplicates_section())
         
-        # Metadata validation results
-        lines.extend(self._generate_metadata_section())
-        lines.append("")
+        # Field completeness
+        if self.field_results:
+            sections.append(self._generate_field_completeness_section())
+        
+        # URL validation
+        if self.url_results:
+            sections.append(self._generate_url_validation_section())
+        
+        # Venue normalization
+        if self.venue_results:
+            sections.append(self._generate_venue_section())
+        
+        # Metadata validation
+        sections.append(self._generate_metadata_section())
         
         # Usage analysis
-        lines.extend(self._generate_usage_section())
-        lines.append("")
+        sections.append(self._generate_usage_section())
         
-        # LLM evaluation results
-        lines.extend(self._generate_evaluation_section())
-        lines.append("")
+        # LLM evaluation
+        sections.append(self._generate_evaluation_section())
         
         # Recommendations
-        lines.extend(self._generate_recommendations())
-        lines.append("")
+        sections.append(self._generate_recommendations())
         
-        # Footer
-        lines.extend(self._generate_footer())
-        
-        return "\n".join(lines)
+        return "\n\n".join(sections)
     
-    def _generate_header(self) -> list[str]:
-        """Generate report header."""
-        width = 80
-        lines = [
-            "╔" + "═" * (width - 2) + "╗",
-            "║" + "Bibliography Validation Report".center(width - 2) + "║",
-            "╠" + "═" * (width - 2) + "╣",
-        ]
-        
-        # File info
+    def _generate_header(self) -> str:
+        """Generate report header with disclaimer."""
         bib_name = Path(self.bib_file).name if self.bib_file else "N/A"
         tex_name = Path(self.tex_file).name if self.tex_file else "N/A"
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        lines.append("║" + f"  Bib File: {bib_name}".ljust(width - 2) + "║")
-        lines.append("║" + f"  TeX File: {tex_name}".ljust(width - 2) + "║")
-        lines.append("║" + f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}".ljust(width - 2) + "║")
-        lines.append("╚" + "═" * (width - 2) + "╝")
-        
-        return lines
+        return f"""# 📚 BibGuard Validation Report
+
+---
+*Report generated by BibGuard*
+
+> [!WARNING]
+> **Please note the following limitations:**
+> 1. Online paper searches may still have errors. Technical blogs and non-paper references cannot be verified.
+> 2. Some papers may not have retrievable abstracts, making LLM relevance judgments unreliable.
+> 3. Use a capable LLM model for relevance checks (doesn't require many tokens), but even the best models may produce errors or hallucinations.
+> 4. This tool is only an aid for detection and cannot replace manual review.
+
+| Property | Value |
+|----------|-------|
+| **Bib File** | `{bib_name}` |
+| **TeX File** | `{tex_name}` |
+| **Generated** | {timestamp} |"""
     
-    def _generate_summary(self) -> list[str]:
+    def _generate_summary(self) -> str:
         """Generate summary statistics."""
-        lines = []
-        lines.append("┌" + "─" * 40 + "┐")
-        lines.append("│" + " SUMMARY ".center(40) + "│")
-        lines.append("├" + "─" * 40 + "┤")
-        
         total = len(self.entries)
         verified = sum(1 for e in self.entries if e.comparison and e.comparison.is_match)
         issues = sum(1 for e in self.entries if e.comparison and e.comparison.has_issues)
@@ -126,168 +146,221 @@ class ReportGenerator:
             for e in self.entries
         )
         
-        lines.append("│" + f"  Total Entries:          {total:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Verified (match):       {verified:>5}".ljust(40) + "│")
-        lines.append("│" + f"  With Issues:            {issues:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Used in TeX:            {used:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Unused:                 {unused:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Duplicate Groups:       {len(self.duplicate_groups):>5}".ljust(40) + "│")
-        lines.append("│" + f"  Entries Evaluated:      {evaluated_entries:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Total Citations Checked:{total_evaluations:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Relevant Citations:     {relevant_citations:>5}".ljust(40) + "│")
-        lines.append("│" + f"  Missing Bib Entries:    {len(self.missing_citations):>5}".ljust(40) + "│")
-        lines.append("└" + "─" * 40 + "┘")
-        
-        return lines
+        return f"""## 📊 Summary
+
+| Metric | Count |
+|--------|------:|
+| Total Entries | {total} |
+| ✅ Verified (match) | {verified} |
+| ⚠️ With Issues | {issues} |
+| 📖 Used in TeX | {used} |
+| 🚫 Unused | {unused} |
+| 👯 Duplicate Groups | {len(self.duplicate_groups)} |
+| 🤖 Entries Evaluated | {evaluated_entries} |
+| 📝 Total Citations Checked | {total_evaluations} |
+| ✓ Relevant Citations | {relevant_citations} |
+| ❌ Missing Bib Entries | {len(self.missing_citations)} |"""
     
-    def _generate_duplicates_section(self) -> list[str]:
+    def _generate_duplicates_section(self) -> str:
         """Generate duplicate detection section."""
-        lines = []
-        lines.append("")
-        lines.append("=" * 80)
-        lines.append(" DUPLICATE DETECTION ".center(80))
-        lines.append("=" * 80)
-        
         if not self.duplicate_groups:
-            lines.append("")
-            lines.append("  ✓ No duplicate entries detected")
-            return lines
+            return "## 👯 Duplicate Detection\n\n✅ No duplicate entries detected."
         
-        lines.append("")
-        lines.append(f"Found {len(self.duplicate_groups)} potential duplicate groups:")
+        lines = [f"## 👯 Duplicate Detection\n\n⚠️ Found **{len(self.duplicate_groups)}** potential duplicate groups:\n"]
         
         for i, group in enumerate(self.duplicate_groups, 1):
-            lines.append("")
-            lines.append(f"┌─ Duplicate Group {i} " + "─" * (60 - len(str(i))))
-            lines.append(f"│  Similarity: {group.similarity_score:.0%}")
-            lines.append(f"│  Reason: {group.reason}")
-            lines.append(f"│  Entries ({len(group.entries)}):")
-            
+            lines.append(f"### Group {i} ({group.similarity_score:.0%} similar)")
+            lines.append(f"\n**Reason:** {group.reason}\n")
+            lines.append("| Entry Key | Title | Year |")
+            lines.append("|-----------|-------|------|")
             for entry in group.entries:
-                lines.append(f"│    • [{entry.key}]")
-                lines.append(f"│      Title: {self._truncate(entry.title, 60)}")
-                if entry.year:
-                    lines.append(f"│      Year: {entry.year}")
-            
-            lines.append("└" + "─" * 75)
+                title = self._clean_text(entry.title)
+                lines.append(f"| `{entry.key}` | {title} | {entry.year or 'N/A'} |")
+            lines.append("")
         
-        return lines
+        return "\n".join(lines)
     
-    def _generate_metadata_section(self) -> list[str]:
+    def _generate_field_completeness_section(self) -> str:
+        """Generate field completeness check section."""
+        if not self.field_results:
+            return "## 📋 Field Completeness\n\n✅ All entries have required fields."
+        
+        lines = [f"## 📋 Field Completeness\n\n⚠️ Found **{len(self.field_results)}** entries with missing fields:\n"]
+        lines.append("| Entry Key | Type | Missing Required | Missing Recommended |")
+        lines.append("|-----------|------|------------------|---------------------|")
+        
+        for result in self.field_results:
+            req = ", ".join(result.missing_required) if result.missing_required else "—"
+            rec = ", ".join(result.missing_recommended) if result.missing_recommended else "—"
+            lines.append(f"| `{result.entry_key}` | {result.entry_type} | {req} | {rec} |")
+        
+        return "\n".join(lines)
+    
+    def _generate_url_validation_section(self) -> str:
+        """Generate URL validation section."""
+        if not self.url_results:
+            return "## 🔗 URL/DOI Validation\n\n✅ All URLs and DOIs are valid."
+        
+        lines = [f"## 🔗 URL/DOI Validation\n\n⚠️ Found **{len(self.url_results)}** invalid URLs/DOIs:\n"]
+        lines.append("| Entry Key | Type | URL | Error |")
+        lines.append("|-----------|------|-----|-------|")
+        
+        for result in self.url_results:
+            url = self._clean_text(result.url)
+            lines.append(f"| `{result.entry_key}` | {result.url_type.upper()} | `{url}` | {result.error} |")
+        
+        return "\n".join(lines)
+    
+    def _generate_venue_section(self) -> str:
+        """Generate venue normalization section."""
+        if not self.venue_results:
+            return "## 🏛️ Venue Consistency\n\n✅ Venue names are consistent."
+        
+        lines = [f"## 🏛️ Venue Consistency\n\n⚠️ Found **{len(self.venue_results)}** venue naming inconsistencies:\n"]
+        
+        for result in self.venue_results:
+            lines.append(f"### {result.canonical_name}")
+            lines.append(f"\n**Suggested:** `{result.suggested_name}`\n")
+            lines.append("| Variant | Count | Entries |")
+            lines.append("|---------|------:|---------|")
+            for variant in result.variants:
+                entries = ", ".join(f"`{k}`" for k in variant.entry_keys[:3])
+                if len(variant.entry_keys) > 3:
+                    entries += f" +{len(variant.entry_keys) - 3} more"
+                lines.append(f"| {variant.name} | {variant.count} | {entries} |")
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _generate_metadata_section(self) -> str:
         """Generate metadata validation section."""
-        lines = []
-        lines.append("")
-        lines.append("=" * 80)
-        lines.append(" METADATA VALIDATION ".center(80))
-        lines.append("=" * 80)
+        lines = ["## 🔍 Metadata Validation\n"]
+        
+        # Group by status
+        verified = []
+        issues = []
+        unverified = []
         
         for entry_report in self.entries:
             entry = entry_report.entry
             comp = entry_report.comparison
             
-            lines.append("")
-            lines.append(f"┌─ [{entry.key}] " + "─" * max(0, 70 - len(entry.key)))
-            lines.append(f"│  Type: {entry.entry_type}")
-            lines.append(f"│  Title: {self._truncate(entry.title, 60)}")
-            
             if comp:
-                status = "✓ MATCH" if comp.is_match else "✗ MISMATCH"
-                lines.append(f"│  Source: {comp.source.upper()}")
-                lines.append(f"│  Status: {status}")
-                lines.append(f"│  Confidence: {comp.confidence:.1%}")
-                
-                # Show all discrepancies if confidence is not 100%
-                if comp.confidence < 0.999:
-                    lines.append("│  Discrepancies:")
-                    
-                    # Check Title
-                    if comp.title_similarity < 0.999:
-                        status = "Mismatch" if not comp.title_match else "Minor variation"
-                        lines.append(f"│    - Title {status} (similarity: {comp.title_similarity:.1%})")
-                        lines.append(f"│      Bib: '{comp.bib_title}'")
-                        lines.append(f"│      Fetched: '{comp.fetched_title}'")
-                    
-                    # Check Author
-                    if comp.author_similarity < 0.999:
-                        status = "Mismatch" if not comp.author_match else "Minor variation"
-                        lines.append(f"│    - Author {status} (similarity: {comp.author_similarity:.1%})")
-                        lines.append(f"│      Bib: {', '.join(comp.bib_authors)}")
-                        lines.append(f"│      Fetched: {', '.join(comp.fetched_authors)}")
-                    
-                    # Check Year
-                    if not comp.year_match:
-                        lines.append(f"│    - Year mismatch: bib='{comp.bib_year}', fetched='{comp.fetched_year}'")
-                    
-                    # Other issues (e.g. unable to fetch)
-                    for issue in comp.issues:
-                        # Skip standard mismatch messages as we handled them above with more detail
-                        if "mismatch" in issue and ("Title" in issue or "Author" in issue or "Year" in issue):
-                            continue
-                        lines.append(f"│    - {issue}")
+                if comp.is_match:
+                    verified.append((entry, comp))
+                elif comp.has_issues:
+                    issues.append((entry, comp))
+                else:
+                    unverified.append((entry, comp))
             else:
-                lines.append("│  Status: Unable to verify")
-            
-            lines.append("└" + "─" * 75)
+                unverified.append((entry, None))
         
-        return lines
+        # Show entries with issues first (expanded)
+        if issues:
+            lines.append(f"### ⚠️ Entries with Issues ({len(issues)})\n")
+            for entry, comp in issues:
+                lines.append(self._format_entry_details(entry, comp))
+        
+        # Verified entries (collapsed)
+        if verified:
+            lines.append(f"\n<details>\n<summary>✅ Verified Entries ({len(verified)})</summary>\n")
+            lines.append("| Entry Key | Title | Source | Confidence |")
+            lines.append("|-----------|-------|--------|------------|")
+            for entry, comp in verified:
+                title = self._clean_text(entry.title)
+                lines.append(f"| `{entry.key}` | {title} | {comp.source} | {comp.confidence:.0%} |")
+            lines.append("\n</details>")
+        
+        # Unverified entries (collapsed)
+        if unverified:
+            lines.append(f"\n<details>\n<summary>❓ Could Not Verify ({len(unverified)})</summary>\n")
+            for entry, comp in unverified:
+                lines.append(f"- `{entry.key}`: {self._clean_text(entry.title)}")
+            lines.append("\n</details>")
+        
+        return "\n".join(lines)
     
-    def _generate_usage_section(self) -> list[str]:
-        """Generate usage analysis section."""
-        lines = []
+    def _format_entry_details(self, entry: BibEntry, comp: ComparisonResult) -> str:
+        """Format detailed entry comparison."""
+        lines = [f"#### `{entry.key}`\n"]
+        lines.append(f"- **Type:** {entry.entry_type}")
+        lines.append(f"- **Source:** {comp.source.upper()}")
+        lines.append(f"- **Confidence:** {comp.confidence:.0%}")
+        
+        if comp.issues:
+            lines.append("\n**Issues:**")
+            for issue in comp.issues:
+                lines.append(f"- {issue}")
+        
+        # Show discrepancies
+        if comp.title_similarity < 0.999:
+            lines.append(f"\n**Title Mismatch** ({comp.title_similarity:.0%} similar)")
+            lines.append(f"- Bib: _{self._clean_text(comp.bib_title)}_")
+            lines.append(f"- Fetched: _{self._clean_text(comp.fetched_title)}_")
+        
+        if comp.author_similarity < 0.999:
+            lines.append(f"\n**Author Mismatch** ({comp.author_similarity:.0%} similar)")
+            lines.append(f"- Bib: {', '.join(comp.bib_authors[:3])}")
+            lines.append(f"- Fetched: {', '.join(comp.fetched_authors[:3])}")
+        
+        if not comp.year_match:
+            lines.append(f"\n**Year Mismatch:** Bib=`{comp.bib_year}`, Fetched=`{comp.fetched_year}`")
+        
         lines.append("")
-        lines.append("=" * 80)
-        lines.append(" CITATION USAGE ANALYSIS ".center(80))
-        lines.append("=" * 80)
+        return "\n".join(lines)
+    
+    def _generate_usage_section(self) -> str:
+        """Generate usage analysis section."""
+        lines = ["## 📖 Citation Usage\n"]
         
         # Unused entries
         unused = [e for e in self.entries if e.usage and not e.usage.is_used]
         if unused:
-            lines.append("")
-            lines.append("┌─ Unused Entries (not cited in TeX) " + "─" * 40)
+            lines.append(f"### 🚫 Unused Entries ({len(unused)})\n")
+            lines.append("These entries are in the `.bib` file but not cited in the document:\n")
             for entry_report in unused:
-                lines.append(f"│  ⚠ {entry_report.entry.key}")
-            lines.append("└" + "─" * 75)
-        else:
+                lines.append(f"- `{entry_report.entry.key}`")
             lines.append("")
-            lines.append("  ✓ All bib entries are cited in the document")
         
         # Missing citations
         if self.missing_citations:
-            lines.append("")
-            lines.append("┌─ Missing Bib Entries (cited but not in bib) " + "─" * 30)
+            lines.append(f"### ❌ Missing Entries ({len(self.missing_citations)})\n")
+            lines.append("These are cited in the document but not in the `.bib` file:\n")
             for key in self.missing_citations:
-                lines.append(f"│  ✗ {key}")
-            lines.append("└" + "─" * 75)
+                lines.append(f"- `{key}`")
+            lines.append("")
         
-        # Usage statistics
-        lines.append("")
-        lines.append("┌─ Citation Frequency " + "─" * 55)
+        # Usage frequency
         used_entries = sorted(
             [(e.entry.key, e.usage.usage_count) for e in self.entries if e.usage and e.usage.is_used],
             key=lambda x: x[1],
             reverse=True
         )
-        for key, count in used_entries:
-            bar = "█" * min(count, 20)
-            lines.append(f"│  {key[:30]:30} {count:3}x {bar}")
-        lines.append("└" + "─" * 75)
         
-        return lines
+        if used_entries:
+            lines.append("<details>\n<summary>📊 Citation Frequency</summary>\n")
+            lines.append("| Entry Key | Citations |")
+            lines.append("|-----------|----------:|")
+            for key, count in used_entries[:20]:
+                bar = "█" * min(count, 10)
+                lines.append(f"| `{key}` | {count} {bar} |")
+            if len(used_entries) > 20:
+                lines.append(f"\n*...and {len(used_entries) - 20} more*")
+            lines.append("\n</details>")
+        
+        if not unused and not self.missing_citations:
+            lines.append("✅ All bib entries are cited in the document.")
+        
+        return "\n".join(lines)
     
-    def _generate_evaluation_section(self) -> list[str]:
+    def _generate_evaluation_section(self) -> str:
         """Generate LLM evaluation section."""
-        lines = []
-        lines.append("")
-        lines.append("=" * 80)
-        lines.append(" CITATION RELEVANCE ANALYSIS (LLM) ".center(80))
-        lines.append("=" * 80)
+        lines = ["## 🤖 Citation Relevance Analysis\n"]
         
         evaluated = [e for e in self.entries if e.evaluations]
         
         if not evaluated:
-            lines.append("")
-            lines.append("  (No LLM evaluation performed or all evaluations failed)")
-            return lines
+            return "## 🤖 Citation Relevance Analysis\n\n*No LLM evaluation performed.*"
         
         # Collect all evaluations
         all_evaluations = []
@@ -295,161 +368,133 @@ class ReportGenerator:
             for eval_res in entry_report.evaluations:
                 all_evaluations.append((entry_report.entry, eval_res))
         
-        # Group by score (High to Low)
+        # Group by score
+        score_labels = {
+            5: "🌟 Highly Relevant",
+            4: "✅ Relevant", 
+            3: "🔸 Somewhat Relevant",
+            2: "⚠️ Marginally Relevant",
+            1: "❌ Not Relevant",
+            0: "❓ Unknown/Error"
+        }
+        
         evals_by_score = {5: [], 4: [], 3: [], 2: [], 1: [], 0: []}
         for entry, eval_res in all_evaluations:
             score = eval_res.relevance_score
             if score not in evals_by_score:
                 score = 0
             evals_by_score[score].append((entry, eval_res))
-            
-        # Generate report by score groups
-        score_labels = {
-            5: "Highly Relevant (5/5)",
-            4: "Relevant (4/5)",
-            3: "Somewhat Relevant (3/5)",
-            2: "Marginally Relevant (2/5)",
-            1: "Not Relevant (1/5)",
-            0: "Unknown/Error"
-        }
         
+        # Summary table
+        lines.append("| Score | Count |")
+        lines.append("|-------|------:|")
+        for score in range(5, -1, -1):
+            count = len(evals_by_score[score])
+            if count > 0:
+                lines.append(f"| {score_labels[score]} | {count} |")
+        lines.append("")
+        
+        # Details for low relevance (collapsed for others)
         for score in range(5, -1, -1):
             group_evals = evals_by_score[score]
             if not group_evals:
                 continue
-                
-            lines.append("")
-            lines.append(f"┌─ {score_labels[score]} ({len(group_evals)} citations) " + "─" * 30)
             
-            for entry, eval_res in group_evals:
-                lines.append(f"│  • [{entry.key}]")
-                if eval_res.line_number:
-                    lines.append(f"│    Line: {eval_res.line_number}")
-                
-                # Show context
-                lines.append(f"│    Context:")
-                context_lines = self._wrap_text(f"\"{eval_res.context_used}\"", 70)
-                for line in context_lines:
-                    lines.append(f"│      {line}")
-                
-                # Show explanation
-                lines.append(f"│    Explanation:")
-                explanation_lines = self._wrap_text(eval_res.explanation, 70)
-                for line in explanation_lines:
-                    lines.append(f"│      {line}")
-                
-                lines.append("│" + "─" * 75)
-            
-            lines.append("└" + "─" * 75)
+            # Low relevance shown expanded, others collapsed
+            if score <= 2:
+                lines.append(f"### {score_labels[score]} ({len(group_evals)} citations)\n")
+                for entry, eval_res in group_evals:
+                    lines.append(self._format_evaluation(entry, eval_res))
+            else:
+                lines.append(f"\n<details>\n<summary>{score_labels[score]} ({len(group_evals)} citations)</summary>\n")
+                for entry, eval_res in group_evals:
+                    lines.append(self._format_evaluation(entry, eval_res))
+                lines.append("\n</details>")
         
-        return lines
+        return "\n".join(lines)
     
-    def _generate_recommendations(self) -> list[str]:
+    def _format_evaluation(self, entry: BibEntry, eval_res: EvaluationResult) -> str:
+        """Format a single evaluation result."""
+        lines = [f"#### `{entry.key}`"]
+        if eval_res.line_number:
+            lines[0] += f" (line {eval_res.line_number})"
+        lines.append("")
+        
+        # Context (full)
+        context = self._clean_text(eval_res.context_used)
+        lines.append(f"> {context}")
+        lines.append("")
+        lines.append(f"**Explanation:** {eval_res.explanation}")
+        lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _generate_recommendations(self) -> str:
         """Generate recommendations section."""
-        lines = []
-        lines.append("")
-        lines.append("=" * 80)
-        lines.append(" RECOMMENDATIONS ".center(80))
-        lines.append("=" * 80)
-        lines.append("")
+        lines = ["## 💡 Recommendations\n"]
         
         recommendations = []
         
-        # Check for unused entries
+        # Unused entries
         unused = [e for e in self.entries if e.usage and not e.usage.is_used]
         if unused:
-            recommendations.append(
-                f"• Remove {len(unused)} unused bibliography entries or add citations for them."
-            )
+            recommendations.append(f"- Remove **{len(unused)}** unused bibliography entries or add citations for them.")
         
-        # Check for missing entries
+        # Missing entries
         if self.missing_citations:
-            recommendations.append(
-                f"• Add {len(self.missing_citations)} missing bibliography entries:"
-            )
-            for key in self.missing_citations:
-                recommendations.append(f"    - {key}")
+            recommendations.append(f"- Add **{len(self.missing_citations)}** missing bibliography entries:")
+            for key in self.missing_citations[:10]:
+                recommendations.append(f"  - `{key}`")
+            if len(self.missing_citations) > 10:
+                recommendations.append(f"  - *...and {len(self.missing_citations) - 10} more*")
         
-        # Check for metadata issues
+        # Metadata issues
         issues = [e for e in self.entries if e.comparison and e.comparison.has_issues]
         if issues:
-            recommendations.append(
-                f"• Review {len(issues)} entries with metadata discrepancies."
-            )
+            recommendations.append(f"- Review **{len(issues)}** entries with metadata discrepancies.")
         
-        # Check for low relevance scores
-        low_relevance_citations = []
+        # Low relevance citations
+        low_relevance = []
         for e in self.entries:
             for ev in e.evaluations:
                 if ev.relevance_score <= 2:
-                    low_relevance_citations.append((e.entry.key, ev))
+                    low_relevance.append((e.entry.key, ev))
         
-        if low_relevance_citations:
-            recommendations.append(
-                f"• Review {len(low_relevance_citations)} specific citations with low relevance scores (≤2/5):"
-            )
-            # List all low relevance citations
-            for key, ev in low_relevance_citations:
-                line_info = f" at line {ev.line_number}" if ev.line_number else ""
-                recommendations.append(f"    - [{key}]{line_info}: Score {ev.relevance_score}/5")
+        if low_relevance:
+            recommendations.append(f"- Review **{len(low_relevance)}** citations with low relevance scores (≤2/5):")
+            for key, ev in low_relevance[:5]:
+                line_info = f" (line {ev.line_number})" if ev.line_number else ""
+                recommendations.append(f"  - `{key}`{line_info}: Score {ev.relevance_score}/5")
+            if len(low_relevance) > 5:
+                recommendations.append(f"  - *...and {len(low_relevance) - 5} more*")
         
-        # Check for unverifiable entries
-        unverifiable = [e for e in self.entries if e.comparison and e.comparison.source == "unable"]
-        if unverifiable:
-            recommendations.append(
-                f"• {len(unverifiable)} entries could not be verified online. Consider adding arXiv IDs or DOIs."
-            )
+        # Field completeness
+        if self.field_results:
+            recommendations.append(f"- Add missing fields to **{len(self.field_results)}** entries.")
+        
+        # URL issues
+        if self.url_results:
+            recommendations.append(f"- Fix **{len(self.url_results)}** invalid URLs/DOIs.")
+        
+        # Venue consistency
+        if self.venue_results:
+            recommendations.append(f"- Normalize **{len(self.venue_results)}** venue names for consistency.")
         
         if not recommendations:
-            recommendations.append("✓ No major issues found. Your bibliography looks good!")
+            lines.append("✅ No major issues found. Your bibliography looks good!")
+        else:
+            lines.extend(recommendations)
         
-        for rec in recommendations:
-            lines.append(f"  {rec}")
+        lines.append("\n---\n*Report generated by BibGuard*")
         
-        return lines
+        return "\n".join(lines)
     
-    def _generate_footer(self) -> list[str]:
-        """Generate report footer."""
-        lines = []
-        lines.append("")
-        lines.append("─" * 80)
-        lines.append("End of Report".center(80))
-        lines.append("─" * 80)
-        return lines
-    
-    def _truncate(self, text: str, max_len: int) -> str:
-        """Truncate text to max length."""
+    def _clean_text(self, text: str) -> str:
+        """Clean text for Markdown output (escape special chars)."""
         if not text:
             return ""
-        text = text.replace("\n", " ")
-        if len(text) <= max_len:
-            return text
-        return text[:max_len - 3] + "..."
-    
-    def _wrap_text(self, text: str, width: int) -> list[str]:
-        """Wrap text to specified width."""
-        if not text:
-            return []
-        
-        words = text.split()
-        lines = []
-        current_line = []
-        current_len = 0
-        
-        for word in words:
-            if current_len + len(word) + 1 <= width:
-                current_line.append(word)
-                current_len += len(word) + 1
-            else:
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [word]
-                current_len = len(word)
-        
-        if current_line:
-            lines.append(" ".join(current_line))
-        
-        return lines
+        # Replace newlines and escape pipe characters for Markdown tables
+        return text.replace("\n", " ").replace("|", "\\|")
     
     def save(self, filepath: str):
         """Save report to file."""

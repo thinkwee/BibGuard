@@ -4,11 +4,14 @@ arXiv metadata fetcher using the public API.
 import re
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, asdict
+from typing import Optional, List, Dict, Any
 from urllib.parse import quote
 
 import requests
+
+from ..utils.logger import get_logger
+from ..utils.cache import get_cache
 
 
 @dataclass
@@ -16,11 +19,11 @@ class ArxivMetadata:
     """Metadata fetched from arXiv."""
     arxiv_id: str
     title: str
-    authors: list[str]
+    authors: List[str]
     abstract: str
     published: str
     updated: str
-    categories: list[str]
+    categories: List[str]
     primary_category: str
     doi: str
     journal_ref: str
@@ -36,6 +39,15 @@ class ArxivMetadata:
             if match:
                 return match.group(1)
         return ""
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for caching."""
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ArxivMetadata':
+        """Create from cached dictionary."""
+        return cls(**data)
 
 
 class ArxivFetcher:
@@ -44,10 +56,12 @@ class ArxivFetcher:
     API_BASE = "http://export.arxiv.org/api/query"
     RATE_LIMIT_DELAY = 3.0  # seconds between requests
     
-    def __init__(self):
-        self._last_request_time = 0.0
+    def __init__(self) -> None:
+        self._last_request_time: float = 0.0
+        self.logger = get_logger()
+        self.cache = get_cache()
     
-    def _rate_limit(self):
+    def _rate_limit(self) -> None:
         """Ensure rate limiting between requests."""
         elapsed = time.time() - self._last_request_time
         if elapsed < self.RATE_LIMIT_DELAY:
@@ -59,6 +73,12 @@ class ArxivFetcher:
         # Clean up ID
         arxiv_id = arxiv_id.strip()
         arxiv_id = re.sub(r'^arXiv:', '', arxiv_id, flags=re.IGNORECASE)
+        
+        # Check cache
+        cache_key = f"id:{arxiv_id}"
+        cached = self.cache.get("arxiv", cache_key)
+        if cached:
+            return ArxivMetadata.from_dict(cached)
         
         self._rate_limit()
         
@@ -72,16 +92,29 @@ class ArxivFetcher:
                 self.API_BASE,
                 params=params,
                 timeout=30,
-                headers={'User-Agent': 'BibChecker/1.0 (mailto:user@example.com)'}
+                headers={'User-Agent': 'BibGuard/2.0 (mailto:user@example.com)'}
             )
             response.raise_for_status()
         except requests.RequestException as e:
+            self.logger.error(f"arXiv fetch failed for ID '{arxiv_id}': {e}")
             return None
         
-        return self._parse_response(response.text)
+        result = self._parse_response(response.text)
+        
+        # Cache result
+        if result:
+            self.cache.set("arxiv", cache_key, result.to_dict())
+        
+        return result
     
-    def search_by_title(self, title: str, max_results: int = 5) -> list[ArxivMetadata]:
+    def search_by_title(self, title: str, max_results: int = 5) -> List[ArxivMetadata]:
         """Search arXiv by title."""
+        # Check cache
+        cache_key = f"search:{title}"
+        cached = self.cache.get("arxiv", cache_key)
+        if cached:
+            return [ArxivMetadata.from_dict(r) for r in cached]
+        
         self._rate_limit()
         
         # Clean up title for search
@@ -103,21 +136,29 @@ class ArxivFetcher:
                 self.API_BASE,
                 params=params,
                 timeout=30,
-                headers={'User-Agent': 'BibChecker/1.0 (mailto:user@example.com)'}
+                headers={'User-Agent': 'BibGuard/2.0 (mailto:user@example.com)'}
             )
             response.raise_for_status()
         except requests.RequestException as e:
+            self.logger.error(f"arXiv search failed for '{title[:50]}': {e}")
             return []
         
-        return self._parse_response_multiple(response.text)
+        results = self._parse_response_multiple(response.text)
+        
+        # Cache results
+        if results:
+            self.cache.set("arxiv", cache_key, [r.to_dict() for r in results])
+        
+        return results
     
     def _parse_response(self, xml_content: str) -> Optional[ArxivMetadata]:
         """Parse single entry response."""
         results = self._parse_response_multiple(xml_content)
         return results[0] if results else None
     
-    def _parse_response_multiple(self, xml_content: str) -> list[ArxivMetadata]:
+    def _parse_response_multiple(self, xml_content: str) -> List[ArxivMetadata]:
         """Parse multiple entries from response."""
+        results: List[ArxivMetadata] = []
         results = []
         
         try:

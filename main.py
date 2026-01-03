@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
-Bibliography Checker - Main CLI Entry Point
+BibGuard - Anti-Hallucination Bibliography Auditor
 
 Validates bibliography entries against online sources and evaluates citation relevance.
 """
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from src.parsers import BibParser, TexParser
-from src.fetchers import ArxivFetcher, ScholarFetcher
-from src.analyzers import MetadataComparator, UsageChecker, LLMEvaluator, DuplicateDetector
+from src.fetchers import ArxivFetcher, ScholarFetcher, CrossRefFetcher, DBLPFetcher
+from src.analyzers import (
+    MetadataComparator, UsageChecker, LLMEvaluator, DuplicateDetector,
+    FieldCompletenessChecker, URLValidator, VenueNormalizer
+)
 from src.analyzers.llm_evaluator import LLMBackend
 from src.report.generator import ReportGenerator, EntryReport
 from src.utils.progress import ProgressDisplay
+from src.utils.logger import get_logger
 
 
 def main():
@@ -44,7 +50,7 @@ Examples:
     parser.add_argument(
         "--enable-all",
         action="store_true",
-        help="Enable all checks (metadata, usage, relevance, duplicates)"
+        help="Enable all checks (metadata, usage, relevance, duplicates, fields, urls, venues)"
     )
     parser.add_argument(
         "--check-metadata",
@@ -65,6 +71,21 @@ Examples:
         "--check-duplicates",
         action="store_true",
         help="Detect duplicate entries using fuzzy matching"
+    )
+    parser.add_argument(
+        "--check-fields",
+        action="store_true",
+        help="Check for missing required/recommended fields"
+    )
+    parser.add_argument(
+        "--check-urls",
+        action="store_true",
+        help="Validate URL and DOI accessibility"
+    )
+    parser.add_argument(
+        "--check-venues",
+        action="store_true",
+        help="Check for inconsistent venue naming"
     )
     
     # LLM options (for --check-relevance)
@@ -90,8 +111,14 @@ Examples:
     # Output options
     parser.add_argument(
         "--output", "-o",
-        default="report.txt",
-        help="Output report file path (default: report.txt)"
+        default="report.md",
+        help="Output report file path (default: report.md)"
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of concurrent workers for fetching (default: 4)"
     )
     parser.add_argument(
         "--quiet", "-q",
@@ -124,9 +151,10 @@ Examples:
         sys.exit(1)
 
 
-def run_checker(args):
+def run_checker(args) -> None:
     """Run the bibliography checker."""
     progress = ProgressDisplay()
+    logger = get_logger()
     
     # Determine which features to run
     if args.enable_all:
@@ -134,20 +162,33 @@ def run_checker(args):
         check_usage = True
         check_relevance = True
         check_duplicates = True
+        check_fields = True
+        check_urls = True
+        check_venues = True
     else:
         check_metadata = args.check_metadata
         check_usage = args.check_usage
         check_relevance = args.check_relevance
         check_duplicates = args.check_duplicates
+        check_fields = args.check_fields
+        check_urls = args.check_urls
+        check_venues = args.check_venues
         
         # If no specific checks are enabled, enable all by default
-        if not (check_metadata or check_usage or check_relevance or check_duplicates):
+        all_checks = [
+            check_metadata, check_usage, check_relevance, check_duplicates,
+            check_fields, check_urls, check_venues
+        ]
+        if not any(all_checks):
             progress.print_warning("No specific checks enabled. Running all checks by default.")
-            progress.print_info("Use --check-metadata, --check-usage, --check-relevance, or --check-duplicates to run specific checks.")
+            progress.print_info("Use --check-* flags to run specific checks.")
             check_metadata = True
             check_usage = True
             check_relevance = True
             check_duplicates = True
+            check_fields = True
+            check_urls = True
+            check_venues = True
     
     # Parse files
     progress.print_header("Parsing Files")
@@ -166,13 +207,19 @@ def run_checker(args):
     # Initialize components based on enabled features
     arxiv_fetcher = None
     scholar_fetcher = None
+    crossref_fetcher = None
+    dblp_fetcher = None
     comparator = None
     usage_checker = None
     llm_evaluator = None
     duplicate_detector = None
+    field_checker = None
+    url_validator = None
+    venue_normalizer = None
     
     if check_metadata or check_relevance:
         arxiv_fetcher = ArxivFetcher()
+        crossref_fetcher = CrossRefFetcher()
         
     if check_metadata:
         scholar_fetcher = ScholarFetcher()
@@ -183,6 +230,17 @@ def run_checker(args):
     
     if check_duplicates:
         duplicate_detector = DuplicateDetector()
+    
+    if check_fields:
+        field_checker = FieldCompletenessChecker()
+    
+    if check_urls:
+        url_validator = URLValidator()
+    
+    if check_venues:
+        if not dblp_fetcher:
+            dblp_fetcher = DBLPFetcher()
+        venue_normalizer = VenueNormalizer()
     
     if check_relevance:
         backend = LLMBackend(args.llm)
@@ -224,6 +282,49 @@ def run_checker(args):
         
         report_gen.set_duplicate_groups(duplicate_groups)
     
+    # Check field completeness (if enabled)
+    if check_fields and field_checker:
+        progress.print_header("Checking Field Completeness")
+        field_results = field_checker.check_all(entries)
+        
+        if field_results:
+            progress.print_warning(f"Found {len(field_results)} entries with missing fields")
+            for result in field_results[:5]:
+                if result.missing_required:
+                    progress.print_info(f"  [{result.entry_key}] Missing required: {', '.join(result.missing_required)}")
+        else:
+            progress.print_success("All entries have required fields")
+        
+        report_gen.set_field_completeness_results(field_results)
+    
+    # Check URL/DOI validity (if enabled)
+    if check_urls and url_validator:
+        progress.print_header("Validating URLs and DOIs")
+        url_results = url_validator.validate_all(entries, max_workers=args.workers)
+        
+        if url_results:
+            progress.print_warning(f"Found {len(url_results)} invalid URLs/DOIs")
+            for result in url_results[:5]:
+                progress.print_info(f"  [{result.entry_key}] {result.url_type}: {result.error}")
+        else:
+            progress.print_success("All URLs and DOIs are valid")
+        
+        report_gen.set_url_validation_results(url_results)
+    
+    # Check venue consistency (if enabled)
+    if check_venues and venue_normalizer:
+        progress.print_header("Checking Venue Consistency")
+        venue_results = venue_normalizer.find_inconsistencies(entries)
+        
+        if venue_results:
+            progress.print_warning(f"Found {len(venue_results)} venue naming inconsistencies")
+            for result in venue_results[:3]:
+                progress.print_info(f"  {result.canonical_name}: {len(result.variants)} variants")
+        else:
+            progress.print_success("Venue names are consistent")
+        
+        report_gen.set_venue_normalization_results(venue_results)
+    
     # Get missing citations (if usage check is enabled)
     if check_usage:
         missing = usage_checker.get_missing_entries(entries)
@@ -249,7 +350,7 @@ def run_checker(args):
             if check_metadata and comparator:
                 prog.update(entry.key, "Fetching metadata", 0)
                 comparison_result = fetch_and_compare(
-                    entry, arxiv_fetcher, scholar_fetcher, comparator
+                    entry, arxiv_fetcher, scholar_fetcher, crossref_fetcher, dblp_fetcher, comparator
                 )
             
             # LLM evaluation (if enabled and entry is used)
@@ -322,29 +423,66 @@ def run_checker(args):
     
     report = report_gen.generate()
     
-    # Save to file if specified
-    if args.output:
-        report_gen.save(args.output)
-        progress.print_success(f"Report saved to: {args.output}")
+    # Save to file
+    output_path = args.output or "report.md"
+    report_gen.save(output_path)
+    progress.print_success(f"Report saved to: {output_path}")
     
-    # Print to stdout
+    # Print recommendations summary to terminal
     if not args.quiet:
-        print("\n" + report)
+        print("\n" + "="*60)
+        print(" 💡 RECOMMENDATIONS SUMMARY")
+        print("="*60)
+        
+        # Count issues
+        unused = [e for e in report_gen.entries if e.usage and not e.usage.is_used]
+        issues = [e for e in report_gen.entries if e.comparison and e.comparison.has_issues]
+        low_relevance = sum(
+            1 for e in report_gen.entries 
+            for ev in e.evaluations 
+            if ev.relevance_score <= 2
+        )
+        
+        if report_gen.missing_citations:
+            print(f"  ❌ Add {len(report_gen.missing_citations)} missing bibliography entries")
+        if issues:
+            print(f"  ⚠️  Review {len(issues)} entries with metadata discrepancies")
+        if low_relevance:
+            print(f"  📝 Review {low_relevance} citations with low relevance (≤2/5)")
+        if unused:
+            print(f"  🚫 Remove or cite {len(unused)} unused entries")
+        if report_gen.field_results:
+            print(f"  📋 Add missing fields to {len(report_gen.field_results)} entries")
+        if report_gen.url_results:
+            print(f"  🔗 Fix {len(report_gen.url_results)} invalid URLs/DOIs")
+        if report_gen.venue_results:
+            print(f"  🏛️  Normalize {len(report_gen.venue_results)} venue names")
+        
+        if not any([report_gen.missing_citations, issues, low_relevance, unused, 
+                   report_gen.field_results, report_gen.url_results, report_gen.venue_results]):
+            print("  ✅ No major issues found!")
+        
+        print("="*60)
+        print(f"\n📄 See full report: {output_path}")
 
 
-def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
+def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, crossref_fetcher, dblp_fetcher, comparator):
     """
-    Fetch metadata from online sources and compare with bib entry.
+    Fetch metadata from multiple online sources and compare with bib entry.
     
-    Strategy:
-    1. Try arXiv by ID (if available)
-    2. Try arXiv by title search
-    3. Fall back to Google Scholar
+    Cascade Strategy (in order of reliability):
+    1. arXiv by ID - Most reliable for preprints
+    2. CrossRef by DOI - Authoritative for published papers
+    3. DBLP by title - Good for CS papers
+    4. arXiv by title search - Broader coverage
+    5. Google Scholar - Last resort (rate limited)
     
     Args:
         entry: BibEntry to verify
         arxiv_fetcher: ArxivFetcher instance
         scholar_fetcher: ScholarFetcher instance
+        crossref_fetcher: CrossRefFetcher instance (can be None)
+        dblp_fetcher: DBLPFetcher instance (can be None)
         comparator: MetadataComparator instance
         
     Returns:
@@ -352,13 +490,46 @@ def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
     """
     from src.utils.normalizer import TextNormalizer
     
-    # Try arXiv first if we have an ID
+    # 1. Try arXiv first if we have an ID (most reliable for preprints)
     if entry.has_arxiv:
         arxiv_meta = arxiv_fetcher.fetch_by_id(entry.arxiv_id)
         if arxiv_meta:
-            return comparator.compare_with_arxiv(entry, arxiv_meta)
+            result = comparator.compare_with_arxiv(entry, arxiv_meta)
+            result.source = "arxiv (by ID)"
+            return result
     
-    # Try searching arXiv by title
+    # 2. Try CrossRef if we have a DOI (authoritative for published papers)
+    doi = entry.raw_entry.get('doi')
+    if doi and crossref_fetcher:
+        crossref_result = crossref_fetcher.fetch_by_doi(doi)
+        if crossref_result and crossref_result.is_valid:
+            # Create comparison result from CrossRef data
+            result = comparator.compare_with_crossref(entry, crossref_result)
+            result.source = "crossref (by DOI)"
+            return result
+    
+    # 3. Try DBLP by title (good for CS papers)
+    if entry.title and dblp_fetcher:
+        dblp_results = dblp_fetcher.search_by_title(entry.title, limit=3)
+        if dblp_results:
+            # Find best match by title similarity
+            best_result = None
+            best_sim = 0.0
+            norm1 = TextNormalizer.normalize_for_comparison(entry.title)
+            
+            for result in dblp_results:
+                norm2 = TextNormalizer.normalize_for_comparison(result.title)
+                sim = TextNormalizer.similarity_ratio(norm1, norm2)
+                if sim > best_sim:
+                    best_sim = sim
+                    best_result = result
+            
+            if best_result and best_sim > 0.7:
+                result = comparator.compare_with_dblp(entry, best_result)
+                result.source = "dblp"
+                return result
+    
+    # 4. Try searching arXiv by title
     if entry.title:
         results = arxiv_fetcher.search_by_title(entry.title, max_results=3)
         if results:
@@ -375,17 +546,21 @@ def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
                     best_result = result
             
             if best_result and best_sim > 0.5:
-                return comparator.compare_with_arxiv(entry, best_result)
+                result = comparator.compare_with_arxiv(entry, best_result)
+                result.source = "arxiv (by title)"
+                return result
     
-    # Try Google Scholar as fallback
+    # 5. Try Google Scholar as last fallback (rate limited)
     if entry.title:
         scholar_result = scholar_fetcher.search_by_title(entry.title)
         if scholar_result:
-            return comparator.compare_with_scholar(entry, scholar_result)
+            result = comparator.compare_with_scholar(entry, scholar_result)
+            result.source = "scholar"
+            return result
     
     # Return unable result
     return comparator.create_unable_result(
-        entry, "Could not find paper in arXiv or Google Scholar"
+        entry, "Could not find paper in arXiv, CrossRef, DBLP, or Google Scholar"
     )
 
 

@@ -5,10 +5,12 @@ import re
 import time
 import random
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Dict
 
 import requests
 from bs4 import BeautifulSoup
+
+from ..utils.logger import get_logger
 
 
 @dataclass
@@ -39,9 +41,10 @@ class ScholarFetcher:
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     ]
     
-    def __init__(self):
-        self._last_request_time = 0.0
+    def __init__(self) -> None:
+        self._last_request_time: float = 0.0
         self._session = requests.Session()
+        self.logger = get_logger()
     
     def _rate_limit(self):
         """Ensure rate limiting between requests."""
@@ -52,7 +55,7 @@ class ScholarFetcher:
             time.sleep(delay - elapsed)
         self._last_request_time = time.time()
     
-    def _get_headers(self) -> dict:
+    def _get_headers(self) -> Dict[str, str]:
         """Get request headers with random user agent."""
         return {
             'User-Agent': random.choice(self.USER_AGENTS),
@@ -63,7 +66,7 @@ class ScholarFetcher:
             'Upgrade-Insecure-Requests': '1',
         }
     
-    def search(self, query: str, max_results: int = 5) -> list[ScholarResult]:
+    def search(self, query: str, max_results: int = 5) -> List[ScholarResult]:
         """
         Search Google Scholar.
         
@@ -87,10 +90,12 @@ class ScholarFetcher:
             )
             response.raise_for_status()
         except requests.RequestException as e:
+            self.logger.error(f"Google Scholar request failed for '{query[:50]}': {e}")
             return []
         
         # Check if we're blocked
         if 'unusual traffic' in response.text.lower() or response.status_code == 429:
+            self.logger.warning("Google Scholar blocked request (rate limited)")
             return []
         
         return self._parse_results(response.text, max_results)
@@ -107,7 +112,7 @@ class ScholarFetcher:
         
         return results[0] if results else None
     
-    def _parse_results(self, html: str, max_results: int) -> list[ScholarResult]:
+    def _parse_results(self, html: str, max_results: int) -> List[ScholarResult]:
         """Parse search results from HTML."""
         results = []
         soup = BeautifulSoup(html, 'lxml')

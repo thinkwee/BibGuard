@@ -195,6 +195,124 @@ class MetadataComparator:
             source="unable"
         )
     
+    def compare_with_crossref(self, bib_entry: BibEntry, crossref_result) -> ComparisonResult:
+        """Compare bib entry with CrossRef DOI verification result."""
+        issues = []
+        
+        # Compare titles
+        bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
+        crossref_title_norm = self.normalizer.normalize_for_comparison(crossref_result.title)
+        
+        title_similarity = self.normalizer.similarity_ratio(bib_title_norm, crossref_title_norm)
+        if len(bib_title_norm) < 100:
+            lev_sim = self.normalizer.levenshtein_similarity(bib_title_norm, crossref_title_norm)
+            title_similarity = max(title_similarity, lev_sim)
+        
+        title_match = title_similarity >= self.TITLE_THRESHOLD
+        
+        if not title_match:
+            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+        
+        # Compare authors
+        bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
+        crossref_authors = [self.normalizer.normalize_author_name(a) for a in crossref_result.authors]
+        
+        author_similarity = self._compare_author_lists(bib_authors, crossref_authors)
+        author_match = author_similarity >= self.AUTHOR_THRESHOLD
+        
+        if not author_match:
+            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+        
+        # Compare years
+        bib_year = bib_entry.year.strip()
+        crossref_year = str(crossref_result.year) if crossref_result.year else ""
+        year_match = bib_year == crossref_year
+        
+        if not year_match and bib_year and crossref_year:
+            issues.append(f"Year mismatch: bib={bib_year}, crossref={crossref_year}")
+        
+        # Overall assessment
+        is_match = title_match and author_match
+        confidence = (title_similarity * 0.5 + author_similarity * 0.3 + (1.0 if year_match else 0.5) * 0.2)
+        
+        return ComparisonResult(
+            entry_key=bib_entry.key,
+            title_match=title_match,
+            title_similarity=title_similarity,
+            bib_title=bib_entry.title,
+            fetched_title=crossref_result.title,
+            author_match=author_match,
+            author_similarity=author_similarity,
+            bib_authors=bib_authors,
+            fetched_authors=crossref_authors,
+            year_match=year_match,
+            bib_year=bib_year,
+            fetched_year=crossref_year,
+            is_match=is_match,
+            confidence=confidence,
+            issues=issues,
+            source="crossref"
+        )
+    
+    def compare_with_dblp(self, bib_entry: BibEntry, dblp_result) -> ComparisonResult:
+        """Compare bib entry with DBLP search result."""
+        issues = []
+        
+        # Compare titles
+        bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
+        dblp_title_norm = self.normalizer.normalize_for_comparison(dblp_result.title)
+        
+        title_similarity = self.normalizer.similarity_ratio(bib_title_norm, dblp_title_norm)
+        if len(bib_title_norm) < 100:
+            lev_sim = self.normalizer.levenshtein_similarity(bib_title_norm, dblp_title_norm)
+            title_similarity = max(title_similarity, lev_sim)
+        
+        title_match = title_similarity >= self.TITLE_THRESHOLD
+        
+        if not title_match:
+            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+        
+        # Compare authors
+        bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
+        dblp_authors = [self.normalizer.normalize_author_name(a) for a in dblp_result.authors]
+        
+        author_similarity = self._compare_author_lists(bib_authors, dblp_authors)
+        author_match = author_similarity >= self.AUTHOR_THRESHOLD
+        
+        if not author_match:
+            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+        
+        # Compare years
+        bib_year = bib_entry.year.strip()
+        dblp_year = str(dblp_result.year) if dblp_result.year else ""
+        year_match = bib_year == dblp_year
+        
+        if not year_match and bib_year and dblp_year:
+            issues.append(f"Year mismatch: bib={bib_year}, dblp={dblp_year}")
+        
+        # Overall assessment
+        is_match = title_match and author_match
+        confidence = (title_similarity * 0.5 + author_similarity * 0.3 + (1.0 if year_match else 0.5) * 0.2)
+        
+        return ComparisonResult(
+            entry_key=bib_entry.key,
+            title_match=title_match,
+            title_similarity=title_similarity,
+            bib_title=bib_entry.title,
+            fetched_title=dblp_result.title,
+            author_match=author_match,
+            author_similarity=author_similarity,
+            bib_authors=bib_authors,
+            fetched_authors=dblp_authors,
+            year_match=year_match,
+            bib_year=bib_year,
+            fetched_year=dblp_year,
+            is_match=is_match,
+            confidence=confidence,
+            issues=issues,
+            source="dblp"
+        )
+    
     def _compare_author_lists(self, list1: list[str], list2: list[str]) -> float:
         """Compare two author lists."""
         if not list1 and not list2:
