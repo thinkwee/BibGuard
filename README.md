@@ -15,7 +15,7 @@ AI coding assistants and writing tools often hallucinate plausible-sounding but 
 
 ## 🚀 Features
 
--   **🔍 Reality Check**: Validates metadata against **arXiv** and **Google Scholar** to catch fake papers.
+-   **🔍 Reality Check**: Validates metadata against **arXiv**, **CrossRef**, and **Google Scholar** to catch fake papers.
 -   **🤖 AI Relevance Judge**: Uses LLMs to read your citation context and the paper's abstract to score relevance (1-5).
 -   **📝 Comprehensive Report**: Generates a detailed, readable report of all issues for manual verification.
 -   **👀 Usage Analysis**: Highlights missing citations (in TeX but not Bib) and unused Bib entries.

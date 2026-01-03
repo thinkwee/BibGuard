@@ -269,7 +269,7 @@ class ReportGenerator:
         )
         for key, count in used_entries:
             bar = "█" * min(count, 20)
-            lines.append(f"│  {key[:30]:30} {count:3}x {bar}")
+            lines.append(f"│  {key} {count:3}x {bar}")
         lines.append("└" + "─" * 75)
         
         return lines
@@ -418,13 +418,11 @@ class ReportGenerator:
         return lines
     
     def _truncate(self, text: str, max_len: int) -> str:
-        """Truncate text to max length."""
+        """Return full text without truncation."""
         if not text:
             return ""
-        text = text.replace("\n", " ")
-        if len(text) <= max_len:
-            return text
-        return text[:max_len - 3] + "..."
+        # Remove newlines but don't truncate
+        return text.replace("\n", " ")
     
     def _wrap_text(self, text: str, width: int) -> list[str]:
         """Wrap text to specified width."""

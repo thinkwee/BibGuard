@@ -7,6 +7,7 @@ from typing import Optional
 from ..parsers.bib_parser import BibEntry
 from ..fetchers.arxiv_fetcher import ArxivMetadata
 from ..fetchers.scholar_fetcher import ScholarResult
+from ..fetchers.crossref_fetcher import CrossRefResult
 from ..utils.normalizer import TextNormalizer
 
 
@@ -36,7 +37,7 @@ class ComparisonResult:
     is_match: bool
     confidence: float
     issues: list[str]
-    source: str  # "arxiv", "scholar", or "unable"
+    source: str  # "arxiv", "scholar", "crossref", or "unable"
     
     @property
     def has_issues(self) -> bool:
@@ -172,6 +173,65 @@ class MetadataComparator:
             confidence=confidence,
             issues=issues,
             source="scholar"
+        )
+    
+    def compare_with_crossref(self, bib_entry: BibEntry, crossref_result: CrossRefResult) -> ComparisonResult:
+        """Compare bib entry with CrossRef search result."""
+        issues = []
+        
+        # Compare titles
+        bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
+        crossref_title_norm = self.normalizer.normalize_for_comparison(crossref_result.title)
+        
+        title_similarity = self.normalizer.similarity_ratio(bib_title_norm, crossref_title_norm)
+        if len(bib_title_norm) < 100:
+            lev_sim = self.normalizer.levenshtein_similarity(bib_title_norm, crossref_title_norm)
+            title_similarity = max(title_similarity, lev_sim)
+        
+        title_match = title_similarity >= self.TITLE_THRESHOLD
+        
+        if not title_match:
+            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+        
+        # Compare authors
+        bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
+        crossref_authors = [self.normalizer.normalize_author_name(a) for a in crossref_result.authors]
+        
+        author_similarity = self._compare_author_lists(bib_authors, crossref_authors)
+        author_match = author_similarity >= self.AUTHOR_THRESHOLD
+        
+        if not author_match:
+            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+        
+        # Compare years
+        bib_year = bib_entry.year.strip()
+        crossref_year = crossref_result.year
+        year_match = bib_year == crossref_year
+        
+        if not year_match and bib_year and crossref_year:
+            issues.append(f"Year mismatch: bib={bib_year}, crossref={crossref_year}")
+        
+        # Overall assessment
+        is_match = title_match and author_match
+        confidence = (title_similarity * 0.5 + author_similarity * 0.3 + (1.0 if year_match else 0.5) * 0.2)
+        
+        return ComparisonResult(
+            entry_key=bib_entry.key,
+            title_match=title_match,
+            title_similarity=title_similarity,
+            bib_title=bib_entry.title,
+            fetched_title=crossref_result.title,
+            author_match=author_match,
+            author_similarity=author_similarity,
+            bib_authors=bib_authors,
+            fetched_authors=crossref_authors,
+            year_match=year_match,
+            bib_year=bib_year,
+            fetched_year=crossref_year,
+            is_match=is_match,
+            confidence=confidence,
+            issues=issues,
+            source="crossref"
         )
     
     def create_unable_result(self, bib_entry: BibEntry, reason: str = "Unable to fetch metadata") -> ComparisonResult:

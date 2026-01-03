@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from src.parsers import BibParser, TexParser
-from src.fetchers import ArxivFetcher, ScholarFetcher
+from src.fetchers import ArxivFetcher, ScholarFetcher, CrossRefFetcher
 from src.analyzers import MetadataComparator, UsageChecker, LLMEvaluator, DuplicateDetector
 from src.analyzers.llm_evaluator import LLMBackend
 from src.report.generator import ReportGenerator, EntryReport
@@ -165,6 +165,7 @@ def run_checker(args):
     
     # Initialize components based on enabled features
     arxiv_fetcher = None
+    crossref_fetcher = None
     scholar_fetcher = None
     comparator = None
     usage_checker = None
@@ -175,6 +176,7 @@ def run_checker(args):
         arxiv_fetcher = ArxivFetcher()
         
     if check_metadata:
+        crossref_fetcher = CrossRefFetcher()
         scholar_fetcher = ScholarFetcher()
         comparator = MetadataComparator()
     
@@ -218,7 +220,7 @@ def run_checker(args):
             for i, group in enumerate(duplicate_groups, 1):
                 progress.print_info(f"Group {i}: {len(group.entries)} entries ({group.similarity_score:.0%} similar) - {group.reason}")
                 for entry in group.entries:
-                    progress.print_info(f"  - [{entry.key}] {entry.title[:60]}...")
+                    progress.print_info(f"  - [{entry.key}] {entry.title}")
         else:
             progress.print_success("No duplicates detected")
         
@@ -228,7 +230,7 @@ def run_checker(args):
     if check_usage:
         missing = usage_checker.get_missing_entries(entries)
         if missing:
-            progress.print_warning(f"Found {len(missing)} citations without bib entries: {', '.join(missing[:5])}")
+            progress.print_warning(f"Found {len(missing)} citations without bib entries: {', '.join(missing)}")
         report_gen.set_missing_citations(missing)
     
     # Process each entry
@@ -249,7 +251,7 @@ def run_checker(args):
             if check_metadata and comparator:
                 prog.update(entry.key, "Fetching metadata", 0)
                 comparison_result = fetch_and_compare(
-                    entry, arxiv_fetcher, scholar_fetcher, comparator
+                    entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher, comparator
                 )
             
             # LLM evaluation (if enabled and entry is used)
@@ -332,18 +334,20 @@ def run_checker(args):
         print("\n" + report)
 
 
-def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
+def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher, comparator):
     """
     Fetch metadata from online sources and compare with bib entry.
     
     Strategy:
     1. Try arXiv by ID (if available)
     2. Try arXiv by title search
-    3. Fall back to Google Scholar
+    3. Try CrossRef (reliable, no blocking)
+    4. Fall back to Google Scholar (may be blocked)
     
     Args:
         entry: BibEntry to verify
         arxiv_fetcher: ArxivFetcher instance
+        crossref_fetcher: CrossRefFetcher instance
         scholar_fetcher: ScholarFetcher instance
         comparator: MetadataComparator instance
         
@@ -377,7 +381,13 @@ def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
             if best_result and best_sim > 0.5:
                 return comparator.compare_with_arxiv(entry, best_result)
     
-    # Try Google Scholar as fallback
+    # Try CrossRef (more reliable than Scholar)
+    if entry.title and crossref_fetcher:
+        crossref_result = crossref_fetcher.search_by_title(entry.title)
+        if crossref_result:
+            return comparator.compare_with_crossref(entry, crossref_result)
+    
+    # Try Google Scholar as last resort (may be blocked)
     if entry.title:
         scholar_result = scholar_fetcher.search_by_title(entry.title)
         if scholar_result:
@@ -385,7 +395,7 @@ def fetch_and_compare(entry, arxiv_fetcher, scholar_fetcher, comparator):
     
     # Return unable result
     return comparator.create_unable_result(
-        entry, "Could not find paper in arXiv or Google Scholar"
+        entry, "Could not find paper in arXiv, CrossRef, or Google Scholar"
     )
 
 

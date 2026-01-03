@@ -55,3 +55,6 @@ env/
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+
+# cache
+.cache
