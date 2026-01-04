@@ -7,6 +7,7 @@ from typing import Optional
 from ..parsers.bib_parser import BibEntry
 from ..fetchers.arxiv_fetcher import ArxivMetadata
 from ..fetchers.scholar_fetcher import ScholarResult
+from ..fetchers.crossref_fetcher import CrossRefResult
 from ..utils.normalizer import TextNormalizer
 
 
@@ -195,8 +196,8 @@ class MetadataComparator:
             source="unable"
         )
     
-    def compare_with_crossref(self, bib_entry: BibEntry, crossref_result) -> ComparisonResult:
-        """Compare bib entry with CrossRef DOI verification result."""
+    def compare_with_crossref(self, bib_entry: BibEntry, crossref_result: CrossRefResult) -> ComparisonResult:
+        """Compare bib entry with CrossRef search result."""
         issues = []
         
         # Compare titles
