@@ -204,12 +204,14 @@ class CrossRefFetcher:
                     name = f"{given} {family}".strip()
                     authors.append(name)
             
-            # Extract year
+            # Extract year (try multiple date fields for better coverage)
             year = None
-            published = data.get('published', {})
-            date_parts = published.get('date-parts', [[]])
-            if date_parts and date_parts[0]:
-                year = date_parts[0][0]
+            for date_field in ['published', 'published-print', 'published-online', 'created']:
+                date_data = data.get(date_field, {})
+                date_parts = date_data.get('date-parts', [[]])
+                if date_parts and date_parts[0]:
+                    year = date_parts[0][0]
+                    break
             
             # Extract container title (journal/conference)
             container_titles = data.get('container-title', [])
