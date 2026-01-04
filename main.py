@@ -276,7 +276,7 @@ def run_checker(args) -> None:
             for i, group in enumerate(duplicate_groups, 1):
                 progress.print_info(f"Group {i}: {len(group.entries)} entries ({group.similarity_score:.0%} similar) - {group.reason}")
                 for entry in group.entries:
-                    progress.print_info(f"  - [{entry.key}] {entry.title[:60]}...")
+                    progress.print_info(f"  - [{entry.key}] {entry.title}")
         else:
             progress.print_success("No duplicates detected")
         
@@ -329,7 +329,7 @@ def run_checker(args) -> None:
     if check_usage:
         missing = usage_checker.get_missing_entries(entries)
         if missing:
-            progress.print_warning(f"Found {len(missing)} citations without bib entries: {', '.join(missing[:5])}")
+            progress.print_warning(f"Found {len(missing)} citations without bib entries: {', '.join(missing)}")
         report_gen.set_missing_citations(missing)
     
     # Process each entry

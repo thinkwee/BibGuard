@@ -122,10 +122,7 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 error="Missing context or abstract for evaluation"
             )
         
-        # Truncate if too long
-        context = context[:2000] if len(context) > 2000 else context
-        abstract = abstract[:2000] if len(abstract) > 2000 else abstract
-        
+        # Don't truncate - preserve full context and abstract
         prompt = self.PROMPT_TEMPLATE.format(context=context, abstract=abstract)
         
         try:
@@ -297,7 +294,7 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 entry_key=entry_key,
                 relevance_score=0,
                 is_relevant=False,
-                explanation=response[:500],
+                explanation=response,
                 context_used=context,
                 abstract_used=abstract,
                 error="Failed to parse LLM response as JSON"
