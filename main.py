@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from src.parsers import BibParser, TexParser
-from src.fetchers import ArxivFetcher, ScholarFetcher, CrossRefFetcher, SemanticScholarFetcher, OpenAlexFetcher
+from src.fetchers import ArxivFetcher, ScholarFetcher, CrossRefFetcher, SemanticScholarFetcher, OpenAlexFetcher, DBLPFetcher
 from src.analyzers import MetadataComparator, UsageChecker, LLMEvaluator, DuplicateDetector
 from src.analyzers.llm_evaluator import LLMBackend
 from src.report.generator import ReportGenerator, EntryReport
@@ -90,8 +90,8 @@ Examples:
     # Output options
     parser.add_argument(
         "--output", "-o",
-        default="report.txt",
-        help="Output report file path (default: report.txt)"
+        default="report.md",
+        help="Output report file path (default: report.md)"
     )
     parser.add_argument(
         "--quiet", "-q",
@@ -169,6 +169,7 @@ def run_checker(args):
     scholar_fetcher = None
     semantic_scholar_fetcher = None
     openalex_fetcher = None
+    dblp_fetcher = None
     comparator = None
     usage_checker = None
     llm_evaluator = None
@@ -180,6 +181,7 @@ def run_checker(args):
     if check_metadata:
         semantic_scholar_fetcher = SemanticScholarFetcher()  # Free API, no key needed
         openalex_fetcher = OpenAlexFetcher()  # Free API, no key needed
+        dblp_fetcher = DBLPFetcher() # Free API, no key needed
         crossref_fetcher = CrossRefFetcher()
         scholar_fetcher = ScholarFetcher()
         comparator = MetadataComparator()
@@ -256,7 +258,7 @@ def run_checker(args):
                 prog.update(entry.key, "Fetching metadata", 0)
                 comparison_result = fetch_and_compare(
                     entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher, 
-                    semantic_scholar_fetcher, openalex_fetcher, comparator
+                    semantic_scholar_fetcher, openalex_fetcher, dblp_fetcher, comparator
                 )
             
             # LLM evaluation (if enabled and entry is used)
@@ -334,23 +336,26 @@ def run_checker(args):
         report_gen.save(args.output)
         progress.print_success(f"Report saved to: {args.output}")
     
-    # Print to stdout
+    # Print to stdout (Summary and Issues only)
     if not args.quiet:
-        print("\n" + report)
+        console_output = report_gen.generate_console_output()
+        print("\n" + console_output)
 
 
 def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher, 
-                      semantic_scholar_fetcher, openalex_fetcher, comparator):
+                      semantic_scholar_fetcher, openalex_fetcher, dblp_fetcher, comparator):
     """
     Fetch metadata from online sources and compare with bib entry.
     
     New Strategy (Prioritize reliable APIs):
     1. Try arXiv by ID (if available)
-    2. Try Semantic Scholar (Official API)
-    3. Try OpenAlex (Official API)
-    4. Try arXiv by title search
-    5. Try CrossRef
-    6. Fall back to Google Scholar (scraping, may be blocked)
+    2. Try CrossRef by DOI (Authoritative for DOIs)
+    3. Try Semantic Scholar (Official API)
+    4. Try DBLP (Official API, high quality for CS)
+    5. Try OpenAlex (Official API)
+    6. Try arXiv by title search
+    7. Try CrossRef by title search
+    8. Fall back to Google Scholar (scraping, may be blocked)
     
     Args:
         entry: BibEntry to verify
@@ -359,6 +364,7 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
         scholar_fetcher: ScholarFetcher instance
         semantic_scholar_fetcher: SemanticScholarFetcher instance
         openalex_fetcher: OpenAlexFetcher instance
+        dblp_fetcher: DBLPFetcher instance
         comparator: MetadataComparator instance
         
     Returns:
@@ -377,7 +383,16 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
             if result.is_match:
                 return result
 
-    # 2. Try Semantic Scholar (High Priority, Reliable API)
+    # 2. Try CrossRef by DOI (Authoritative for DOIs)
+    if entry.doi and crossref_fetcher:
+        crossref_result = crossref_fetcher.search_by_doi(entry.doi)
+        if crossref_result:
+            result = comparator.compare_with_crossref(entry, crossref_result)
+            all_results.append(result)
+            if result.is_match:
+                return result
+
+    # 3. Try Semantic Scholar (High Priority, Reliable API)
     if entry.title and semantic_scholar_fetcher:
         # Try DOI first if available
         ss_result = None
@@ -394,7 +409,16 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
             if result.is_match:
                 return result
 
-    # 3. Try OpenAlex (High Priority, Broad Coverage)
+    # 4. Try DBLP (High Priority for CS)
+    if entry.title and dblp_fetcher:
+        dblp_result = dblp_fetcher.search_by_title(entry.title)
+        if dblp_result:
+            result = comparator.compare_with_dblp(entry, dblp_result)
+            all_results.append(result)
+            if result.is_match:
+                return result
+
+    # 5. Try OpenAlex (High Priority, Broad Coverage)
     if entry.title and openalex_fetcher:
         # Try DOI first if available
         oa_result = None
@@ -411,7 +435,7 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
             if result.is_match:
                 return result
     
-    # 4. Try searching arXiv by title
+    # 6. Try searching arXiv by title
     if entry.title:
         results = arxiv_fetcher.search_by_title(entry.title, max_results=3)
         if results:
@@ -433,7 +457,7 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
                 if result.is_match:
                     return result
     
-    # 5. Try CrossRef (Reliable)
+    # 7. Try CrossRef (Reliable)
     if entry.title and crossref_fetcher:
         crossref_result = crossref_fetcher.search_by_title(entry.title)
         if crossref_result:
@@ -442,7 +466,7 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
             if result.is_match:
                 return result
     
-    # 6. Try Google Scholar as last resort (May be blocked)
+    # 8. Try Google Scholar as last resort (May be blocked)
     if entry.title and scholar_fetcher:
         scholar_result = scholar_fetcher.search_by_title(entry.title)
         if scholar_result:
@@ -460,7 +484,7 @@ def fetch_and_compare(entry, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
     
     # No results at all, return unable
     return comparator.create_unable_result(
-        entry, "Could not find paper in arXiv, Semantic Scholar, OpenAlex, CrossRef, or Google Scholar"
+        entry, "Could not find paper in arXiv, Semantic Scholar, DBLP, OpenAlex, CrossRef, or Google Scholar"
     )
 
 

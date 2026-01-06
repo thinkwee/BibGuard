@@ -15,9 +15,9 @@ AI coding assistants and writing tools often hallucinate plausible-sounding but 
 
 ## 🚀 Features
 
--   **🔍 Reality Check**: Validates metadata against **arXiv**, **CrossRef**, and **Google Scholar** to catch fake papers.
+-   **🔍 Reality Check**: Validates metadata against **arXiv**, **Semantic Scholar**, **DBLP**, **OpenAlex**, **CrossRef**, and **Google Scholar** to catch fake papers.
 -   **🤖 AI Relevance Judge**: Uses LLMs to read your citation context and the paper's abstract to score relevance (1-5).
--   **📝 Comprehensive Report**: Generates a detailed, readable report of all issues for manual verification.
+-   **📝 Comprehensive Markdown Report**: Generates a detailed, readable **Markdown report** (`.md`) with prioritized issues for manual verification.
 -   **👀 Usage Analysis**: Highlights missing citations (in TeX but not Bib) and unused Bib entries.
 -   **👯 Duplicate Detector**: Identifies duplicate entries to keep your Bib file healthy.
 
@@ -34,10 +34,10 @@ AI coding assistants and writing tools often hallucinate plausible-sounding but 
 Perform a full self-audit (Reality Check + Relevance + Usage Analysis):
 
 ```bash
-python main.py --bib paper.bib --tex paper.tex --enable-all --output report.txt
+python main.py --bib paper.bib --tex paper.tex --enable-all
 ```
 
-**Note:** This will print a summary to the console and save a detailed `report.txt` for your review. It also creates a *separate* `_only_used_entry.bib` file for reference, but leaves your original file untouched.
+**Note:** This will print a summary to the console and save a detailed `report.md` for your review. It also creates a *separate* `_only_used_entry.bib` file for reference, but leaves your original file untouched.
 
 ## 🛠 Usage Guide
 
@@ -70,8 +70,28 @@ Review the generated report carefully. If you decide to clean up your bibliograp
 
 ## 📝 Output Report
 
-BibGuard produces a detailed report containing:
+BibGuard produces a detailed **Markdown report** (`report.md`) containing:
+-   **⚠️ Critical Issues (Prioritized)**: Missing entries, duplicates, and metadata mismatches are shown first.
 -   **Hallucination Alerts**: Entries that couldn't be found online.
 -   **Relevance Scores**: Detailed breakdown of why a citation might be irrelevant, with context.
 -   **Metadata Fixes**: Discrepancies between your BibTeX and official records.
 -   **Cleanliness Stats**: Unused and missing citations.
+
+## 🧐 Understanding Mismatches
+
+BibGuard is strict, but false positives happen. Here are common scenarios where you might see a "Mismatch" warning that is actually safe to ignore:
+
+1.  **Year Discrepancy (±1 Year)**:
+    *   *Scenario*: Your bib says `2023`, but the fetched metadata says `2024`.
+    *   *Reason*: Often caused by the delay between a preprint (arXiv) and the official conference/journal publication.
+    *   *Action*: Verify which version you intend to cite.
+
+2.  **Author List Variations**:
+    *   *Scenario*: "Author mismatch" with low similarity.
+    *   *Reason*: Different databases handle large author lists differently (e.g., truncating with `et al.` vs. listing all authors).
+    *   *Action*: Check if the primary authors match.
+
+3.  **Non-Academic Sources (Blogs/Websites)**:
+    *   *Scenario*: "Confidence: Low" or "Unable to fetch metadata".
+    *   *Reason*: Blogs, software documentation, and websites are often not indexed by academic databases like Semantic Scholar or DBLP.
+    *   *Action*: Manually verify the URL and title.
