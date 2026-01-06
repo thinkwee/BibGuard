@@ -31,23 +31,28 @@ class ScholarFetcher:
     """
     
     SEARCH_URL = "https://scholar.google.com/scholar"
-    RATE_LIMIT_DELAY = 5.0  # Longer delay for Scholar
+    RATE_LIMIT_DELAY = 10.0  # Conservative delay to avoid blocking (was 5.0)
+    MAX_RETRIES = 2  # Retry on failures
     
     USER_AGENTS = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
     ]
     
     def __init__(self):
         self._last_request_time = 0.0
         self._session = requests.Session()
+        self._request_count = 0
+        self._blocked = False  # Track if we've been blocked
     
     def _rate_limit(self):
         """Ensure rate limiting between requests."""
         elapsed = time.time() - self._last_request_time
-        # Add some randomness to avoid detection
-        delay = self.RATE_LIMIT_DELAY + random.uniform(0, 2)
+        # Add more randomness to avoid detection (3-5 seconds extra)
+        delay = self.RATE_LIMIT_DELAY + random.uniform(3, 5)
         if elapsed < delay:
             time.sleep(delay - elapsed)
         self._last_request_time = time.time()
@@ -70,7 +75,12 @@ class ScholarFetcher:
         Returns list of search results.
         Note: This may fail if blocked by Google.
         """
+        # If we've been blocked, don't waste time
+        if self._blocked:
+            return []
+        
         self._rate_limit()
+        self._request_count += 1
         
         params = {
             'q': query,
@@ -91,6 +101,8 @@ class ScholarFetcher:
         
         # Check if we're blocked
         if 'unusual traffic' in response.text.lower() or response.status_code == 429:
+            self._blocked = True
+            print(f"⚠️  Google Scholar blocked after {self._request_count} requests. Skipping further Scholar queries.")
             return []
         
         return self._parse_results(response.text, max_results)
@@ -151,15 +163,38 @@ class ScholarFetcher:
         
         if meta_elem:
             meta_text = meta_elem.get_text(strip=True)
-            # Parse "Author1, Author2 - Journal, Year - Publisher"
-            parts = meta_text.split(' - ')
-            if parts:
-                authors = parts[0].strip()
             
-            # Extract year
+            # Extract year first
             year_match = re.search(r'\b(19|20)\d{2}\b', meta_text)
             if year_match:
                 year = year_match.group(0)
+            
+            # Parse authors more carefully
+            # Format is usually: "Author1, Author2 - Journal, Year - Publisher"
+            # or sometimes: "Author1, Author2 - Journal/Conference - Year"
+            parts = meta_text.split(' - ')
+            if parts:
+                author_part = parts[0].strip()
+                
+                # Clean up author field - remove year if it leaked in
+                if year:
+                    # Remove year and anything after it from author field
+                    author_part = re.sub(r',?\s*' + re.escape(year) + r'.*$', '', author_part)
+                
+                # Remove common journal/venue keywords that might have leaked
+                # Handle patterns like "the journal of", "the proceedings", etc.
+                author_part = re.sub(r'\s+the\s+(journal|proceedings|conference|symposium|workshop|transactions|magazine|review|annals)\s+.*$', '', author_part, flags=re.IGNORECASE)
+                
+                # Also handle without "the" prefix
+                author_part = re.sub(r'\s+(journal|proceedings|conference|symposium|workshop|transactions|magazine|review|annals)\s+.*$', '', author_part, flags=re.IGNORECASE)
+                
+                # Remove standalone "the" at the end (in case it's left over)
+                author_part = re.sub(r'\s+the\s*$', '', author_part, flags=re.IGNORECASE)
+                
+                # Remove trailing commas and whitespace
+                author_part = author_part.rstrip(', ').strip()
+                
+                authors = author_part
         
         # Get snippet
         snippet_elem = entry.find('div', class_='gs_rs')

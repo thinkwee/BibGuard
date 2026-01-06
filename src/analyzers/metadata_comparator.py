@@ -8,6 +8,8 @@ from ..parsers.bib_parser import BibEntry
 from ..fetchers.arxiv_fetcher import ArxivMetadata
 from ..fetchers.scholar_fetcher import ScholarResult
 from ..fetchers.crossref_fetcher import CrossRefResult
+from ..fetchers.semantic_scholar_fetcher import SemanticScholarResult
+from ..fetchers.openalex_fetcher import OpenAlexResult
 from ..utils.normalizer import TextNormalizer
 
 
@@ -37,7 +39,7 @@ class ComparisonResult:
     is_match: bool
     confidence: float
     issues: list[str]
-    source: str  # "arxiv", "scholar", "crossref", or "unable"
+    source: str  # "arxiv", "semantic_scholar", "openalex", "crossref", "scholar", or "unable"
     
     @property
     def has_issues(self) -> bool:
@@ -292,3 +294,121 @@ class MetadataComparator:
                 return False
         
         return True
+    
+    def compare_with_semantic_scholar(self, bib_entry: BibEntry, ss_result: SemanticScholarResult) -> ComparisonResult:
+        """Compare bib entry with Semantic Scholar result."""
+        issues = []
+        
+        # Compare titles
+        bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
+        ss_title_norm = self.normalizer.normalize_for_comparison(ss_result.title)
+        
+        title_similarity = self.normalizer.similarity_ratio(bib_title_norm, ss_title_norm)
+        if len(bib_title_norm) < 100:
+            lev_sim = self.normalizer.levenshtein_similarity(bib_title_norm, ss_title_norm)
+            title_similarity = max(title_similarity, lev_sim)
+        
+        title_match = title_similarity >= self.TITLE_THRESHOLD
+        
+        if not title_match:
+            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+        
+        # Compare authors
+        bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
+        ss_authors = [self.normalizer.normalize_author_name(a) for a in ss_result.authors]
+        
+        author_similarity = self._compare_author_lists(bib_authors, ss_authors)
+        author_match = author_similarity >= self.AUTHOR_THRESHOLD
+        
+        if not author_match:
+            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+        
+        # Compare years
+        bib_year = bib_entry.year.strip()
+        ss_year = ss_result.year
+        year_match = bib_year == ss_year
+        
+        if not year_match and bib_year and ss_year:
+            issues.append(f"Year mismatch: bib={bib_year}, semantic_scholar={ss_year}")
+        
+        # Overall assessment
+        is_match = title_match and author_match
+        confidence = (title_similarity * 0.5 + author_similarity * 0.3 + (1.0 if year_match else 0.5) * 0.2)
+        
+        return ComparisonResult(
+            entry_key=bib_entry.key,
+            title_match=title_match,
+            title_similarity=title_similarity,
+            bib_title=bib_entry.title,
+            fetched_title=ss_result.title,
+            author_match=author_match,
+            author_similarity=author_similarity,
+            bib_authors=bib_authors,
+            fetched_authors=ss_authors,
+            year_match=year_match,
+            bib_year=bib_year,
+            fetched_year=ss_year,
+            is_match=is_match,
+            confidence=confidence,
+            issues=issues,
+            source="semantic_scholar"
+        )
+    
+    def compare_with_openalex(self, bib_entry: BibEntry, oa_result: OpenAlexResult) -> ComparisonResult:
+        """Compare bib entry with OpenAlex result."""
+        issues = []
+        
+        # Compare titles
+        bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
+        oa_title_norm = self.normalizer.normalize_for_comparison(oa_result.title)
+        
+        title_similarity = self.normalizer.similarity_ratio(bib_title_norm, oa_title_norm)
+        if len(bib_title_norm) < 100:
+            lev_sim = self.normalizer.levenshtein_similarity(bib_title_norm, oa_title_norm)
+            title_similarity = max(title_similarity, lev_sim)
+        
+        title_match = title_similarity >= self.TITLE_THRESHOLD
+        
+        if not title_match:
+            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+        
+        # Compare authors
+        bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
+        oa_authors = [self.normalizer.normalize_author_name(a) for a in oa_result.authors]
+        
+        author_similarity = self._compare_author_lists(bib_authors, oa_authors)
+        author_match = author_similarity >= self.AUTHOR_THRESHOLD
+        
+        if not author_match:
+            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+        
+        # Compare years
+        bib_year = bib_entry.year.strip()
+        oa_year = oa_result.year
+        year_match = bib_year == oa_year
+        
+        if not year_match and bib_year and oa_year:
+            issues.append(f"Year mismatch: bib={bib_year}, openalex={oa_year}")
+        
+        # Overall assessment
+        is_match = title_match and author_match
+        confidence = (title_similarity * 0.5 + author_similarity * 0.3 + (1.0 if year_match else 0.5) * 0.2)
+        
+        return ComparisonResult(
+            entry_key=bib_entry.key,
+            title_match=title_match,
+            title_similarity=title_similarity,
+            bib_title=bib_entry.title,
+            fetched_title=oa_result.title,
+            author_match=author_match,
+            author_similarity=author_similarity,
+            bib_authors=bib_authors,
+            fetched_authors=oa_authors,
+            year_match=year_match,
+            bib_year=bib_year,
+            fetched_year=oa_year,
+            is_match=is_match,
+            confidence=confidence,
+            issues=issues,
+            source="openalex"
+        )
