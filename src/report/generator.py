@@ -25,12 +25,13 @@ class EntryReport:
 class ReportGenerator:
     """Generates formatted markdown reports."""
     
-    def __init__(self):
+    def __init__(self, minimal_verified: bool = False):
         self.entries: list[EntryReport] = []
         self.missing_citations: list[str] = []
-        self.duplicate_groups: list[DuplicateGroup] = []
+        self.duplicate_groups: list[DuplicateGroup] | None = None  # None means check not run
         self.bib_file: str = ""
         self.tex_file: str = ""
+        self.minimal_verified = minimal_verified  # Whether to show minimal info for verified entries
     
     def add_entry_report(self, report: EntryReport):
         """Add an entry report."""
@@ -142,8 +143,11 @@ class ReportGenerator:
             unused_str = "N/A"
             missing_str = "N/A"
             
-        # Duplicate stats
-        dup_str = str(len(self.duplicate_groups)) if self.duplicate_groups else "0"
+        # Duplicate stats - show N/A if check wasn't run (duplicate_groups is None means not checked)
+        if self.duplicate_groups is None:
+            dup_str = "N/A"
+        else:
+            dup_str = str(len(self.duplicate_groups))
 
         return [
             "## 📊 Summary",
@@ -225,7 +229,7 @@ class ReportGenerator:
             lines.append("### ⚠️ Metadata & Relevance Issues")
             
             for entry_report in issue_entries:
-                lines.extend(self._format_entry_detail(entry_report))
+                lines.extend(self._format_entry_detail(entry_report, is_verified=False))
 
         if not has_any_issues:
             lines.append("🎉 **No critical issues found!**")
@@ -251,19 +255,19 @@ class ReportGenerator:
         lines.append("")
         
         for entry_report in verified:
-            lines.extend(self._format_entry_detail(entry_report, minimal=True))
+            lines.extend(self._format_entry_detail(entry_report, minimal=self.minimal_verified, is_verified=True))
             
         lines.append("</details>")
         return lines
 
-    def _format_entry_detail(self, report: EntryReport, minimal: bool = False) -> list[str]:
+    def _format_entry_detail(self, report: EntryReport, minimal: bool = False, is_verified: bool = False) -> list[str]:
         """Format a single entry report in Markdown."""
         entry = report.entry
         comp = report.comparison
         lines = []
         
-        # Title header
-        icon = "✅" if minimal else "⚠️"
+        # Title header - use checkmark for verified entries, warning for issues
+        icon = "✅" if is_verified else "⚠️"
         lines.append(f"#### {icon} `{entry.key}`")
         lines.append(f"**Title:** {entry.title}")
         lines.append("")

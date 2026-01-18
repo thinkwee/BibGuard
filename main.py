@@ -98,6 +98,11 @@ Examples:
         action="store_true",
         help="Suppress progress output"
     )
+    parser.add_argument(
+        "--minimal-verified",
+        action="store_true",
+        help="Show minimal info for verified entries (hide relevance details)"
+    )
     
     args = parser.parse_args()
     
@@ -213,7 +218,7 @@ def run_checker(args):
             usage_checker = UsageChecker(tex_parser)
     
     # Initialize report generator
-    report_gen = ReportGenerator()
+    report_gen = ReportGenerator(minimal_verified=args.minimal_verified)
     report_gen.set_metadata(args.bib, args.tex)
     
     # Check for duplicates first (if enabled)
