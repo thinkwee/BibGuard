@@ -42,6 +42,7 @@ env/
 *.txt
 *.md
 !README.md
+!MERGE_ANALYSIS.md
 *_only_used_entry.bib
 
 # LaTeX and Bibliography (User Data)
