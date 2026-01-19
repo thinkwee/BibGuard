@@ -1,0 +1,190 @@
+# ==============================================================================
+# BibGuard Configuration File
+# ==============================================================================
+# 
+# Usage: python main.py --config bibguard.yaml
+#        python main.py  (auto-detect bibguard.yaml in current/parent directories)
+#
+# All paths are relative to this configuration file's directory.
+
+# ==============================================================================
+# 📁 File Settings
+# ==============================================================================
+files:
+  # Required: Path to your .bib bibliography file
+  bib: "test.bib"
+  
+  # Required: Path to your .tex LaTeX source file
+  tex: "test.tex"
+  
+  # Output directory for all generated reports and files (default: bibguard_output)
+  # All outputs including reports, cleaned .bib, and input file copies will be saved here
+  output_dir: "test"
+
+
+# ==============================================================================
+# 🎓 Conference Template
+# ==============================================================================
+# Specify a conference template for venue-specific checks and formatting rules.
+# Available templates: acl, emnlp, naacl, cvpr, iccv, eccv, neurips, icml, iclr
+# Leave empty ("") to skip template-specific checks.
+template: ""
+
+# ==============================================================================
+# 📚 Bibliography Checks
+# ==============================================================================
+bibliography:
+  # Metadata Validation - Verify bib entries against online databases (arXiv, CrossRef, etc.)
+  # Detects incorrect titles, authors, venues, and publication years
+  check_metadata: true
+  
+  # Usage Check - Detect unused bib entries and missing citations
+  # Identifies entries in .bib not cited in .tex, and citations without bib entries
+  check_usage: true
+  
+  # Duplicate Detection - Find duplicate entries with different keys
+  # Uses fuzzy matching on titles and DOIs to identify the same paper cited multiple times
+  check_duplicates: true
+  
+  # Relevance Assessment - Use LLM to evaluate if citations match their context
+  # Requires LLM configuration (see llm section below). Disabled by default due to API costs.
+  check_relevance: false
+
+# ==============================================================================
+# 📋 Submission Quality Checks
+# ==============================================================================
+submission:
+  # Master switch - Enable/disable all LaTeX quality checks
+  # Set to false to skip all submission checks below
+  enabled: true
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Format Checks
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  # Caption Position - Ensure table captions are above, figure captions below
+  # Checks \caption placement relative to \begin{table}/\begin{figure}
+  caption: true
+  
+  # Cross-References - Verify all figures/tables/sections are referenced in text
+  # Detects orphaned floats that are never mentioned
+  reference: true
+  
+  # Formatting Standards - Check citation format, spacing, special characters
+  # Validates \cite{} usage, non-breaking spaces, proper quotation marks, etc.
+  formatting: true
+  
+  # Equation Checks - Verify equation punctuation and numbering consistency
+  # Ensures equations end with proper punctuation and labels are used correctly
+  equation: true
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Writing Quality
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  # AI Artifacts - Detect traces of AI-generated text
+  # Flags phrases like "Sure, here is...", "As an AI...", "It's important to note..."
+  ai_artifacts: true
+  
+  # Sentence Quality - Identify overly long sentences, weak openings, redundant phrases
+  # Helps improve readability and academic writing style
+  sentence: true
+  
+  # Terminology Consistency - Check for inconsistent spelling, hyphenation, US/UK variants
+  # Examples: "deep learning" vs "deep-learning", "color" vs "colour"
+  consistency: true
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Academic Standards
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  # Acronym Definitions - Ensure acronyms are defined on first use
+  # Example: "Natural Language Processing (NLP)" before using "NLP" alone
+  # acronym: true
+  
+  # Number Formatting - Check small numbers are spelled out, units have proper spacing
+  # Examples: "three experiments" not "3 experiments", "10 ms" not "10ms"
+  number: true
+  
+  # Citation Quality - Flag outdated references and citation formatting issues
+  # Warns about papers older than 5 years in fast-moving fields
+  citation_quality: true
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Review Compliance
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  # Anonymization - Check double-blind review compliance
+  # Detects GitHub links, acknowledgments, self-citations that may reveal author identity
+  anonymization: true
+
+# ==============================================================================
+# 🔍 Metadata Check Workflow
+# ==============================================================================
+# Define the data sources and order for metadata validation.
+# BibGuard will try each enabled source in sequence until a match is found.
+# Set enabled: false to skip a particular source.
+workflow:
+  - name: arxiv_id
+    enabled: true
+    description: "Lookup by arXiv ID (fastest, most reliable for preprints)"
+    
+  - name: crossref_doi  
+    enabled: true
+    description: "Lookup by DOI via CrossRef (authoritative for published papers)"
+    
+  - name: semantic_scholar
+    enabled: true
+    description: "Semantic Scholar API (good coverage, includes citations)"
+    
+  - name: dblp
+    enabled: true
+    description: "DBLP database (comprehensive for computer science papers)"
+    
+  - name: openalex
+    enabled: true
+    description: "OpenAlex API (broad coverage across disciplines)"
+    
+  - name: arxiv_title
+    enabled: true
+    description: "Search arXiv by title (fallback when ID unavailable)"
+    
+  - name: crossref_title
+    enabled: true
+    description: "Search CrossRef by title (fallback when DOI unavailable)"
+    
+  - name: google_scholar
+    enabled: false  # May be rate-limited, disabled by default
+    description: "Google Scholar web scraping (use as last resort)"
+
+# ==============================================================================
+# 🤖 LLM Configuration (for Relevance Checking)
+# ==============================================================================
+llm:
+  # Backend provider: ollama, vllm, gemini, openai, anthropic, deepseek
+  # Each backend requires different setup (API keys, local installation, etc.)
+  backend: "gemini"
+  
+  # Model name (leave empty to use backend default)
+  # Examples: "gpt-4", "claude-3-opus", "gemini-pro", "llama3"
+  model: ""
+  
+  # API endpoint (leave empty to use backend default)
+  # Only needed for self-hosted models (vllm, ollama) or custom endpoints
+  endpoint: ""
+  
+  # API key (recommended to use environment variables instead)
+  # Set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, etc. in your environment
+  api_key: ""
+
+# ==============================================================================
+# 📊 Output Settings
+# ==============================================================================
+output:
+  # Quiet mode - Suppress progress messages, only output final reports
+  # Useful for CI/CD pipelines or batch processing
+  quiet: false
+  
+  # Minimal verified entries - Hide detailed info for entries that passed all checks
+  # Reduces report size when you only care about issues
+  minimal_verified: false
