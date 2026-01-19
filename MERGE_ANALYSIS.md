@@ -49,13 +49,13 @@ python main.py --list-templates     # 列出可用模板
 
 ### 2.2 影响评估
 
-| 变更项 | 影响程度 | 说明 |
-|--------|----------|------|
-| 命令行参数 | 🔴 **高** | 所有 `--bib`, `--tex`, `--check-*` 等参数被移除 |
-| 配置方式 | 🔴 **高** | 从命令行参数转变为 YAML 配置文件 |
-| 输出目录 | 🟡 **中** | 输出改为 `bibguard_output/` 目录 |
-| 输出文件 | 🟡 **中** | 新增多种报告格式 |
-| 新功能 | 🟢 **低** | 新增模板系统、会议特定检查等 |
+| 变更项 | 影响程度 | 说明 | 向后兼容 |
+|--------|----------|------|----------|
+| 命令行参数 | 🔴 **高** | 所有 `--bib`, `--tex`, `--check-*` 等参数被移除 | ❌ 不兼容 |
+| 配置方式 | 🔴 **高** | 从命令行参数转变为 YAML 配置文件 | ❌ 不兼容 |
+| 输出目录 | 🟡 **中** | 输出改为 `bibguard_output/` 目录 | ❌ 不兼容 |
+| 输出文件 | 🟡 **中** | 新增多种报告格式 | ✅ 向后兼容 |
+| 新功能 | 🟢 **低** | 新增模板系统、会议特定检查等 | ✅ 向后兼容 |
 
 ### 2.3 用户迁移所需工作
 
@@ -98,17 +98,19 @@ python main.py
 
 ### 新增检查器
 
-- `acronym_checker.py` - 首字母缩略词检查
-- `ai_artifacts_checker.py` - AI生成痕迹检查
-- `anonymization_checker.py` - 匿名化合规检查
-- `caption_checker.py` - 标题位置检查
-- `citation_quality_checker.py` - 引用质量检查
-- `consistency_checker.py` - 一致性检查
-- `equation_checker.py` - 公式检查
-- `formatting_checker.py` - 格式检查
-- `number_checker.py` - 数字格式检查
-- `reference_checker.py` - 交叉引用检查
-- `sentence_checker.py` - 句子质量检查
+| 检查器 | 功能说明 |
+|--------|----------|
+| `acronym_checker.py` | 检查首字母缩略词是否在首次使用时定义，是否一致使用 |
+| `ai_artifacts_checker.py` | 检测 AI 生成文本的痕迹，如 "Sure, here is..."、"As an AI..." 等 |
+| `anonymization_checker.py` | 检查双盲审稿的匿名化合规，检测可能泄露作者身份的内容 |
+| `caption_checker.py` | 验证表格标题在上方、图片标题在下方的正确位置 |
+| `citation_quality_checker.py` | 评估引用年龄分布、自引比例、引用多样性等指标 |
+| `consistency_checker.py` | 检查术语一致性（如 deep learning vs deep-learning）、美英英语混用 |
+| `equation_checker.py` | 验证公式标点符号、编号一致性 |
+| `formatting_checker.py` | 检查引用格式、间距、特殊字符使用规范 |
+| `number_checker.py` | 检查数字格式规范（如千分位、小数点） |
+| `reference_checker.py` | 验证所有图表、章节的交叉引用完整性 |
+| `sentence_checker.py` | 检测过长句子、弱开头词、冗余表达 |
 
 ---
 
@@ -118,7 +120,11 @@ python main.py
 
 1. **发布版本说明**：清晰记录 CLI 接口的变更
 2. **提供迁移指南**：帮助用户从命令行参数迁移到配置文件
-3. **考虑过渡期**：可以考虑暂时保留旧的命令行参数作为兼容选项
+3. **实现向后兼容过渡期**：
+   - 保留旧的命令行参数（如 `--bib`, `--tex`, `--check-*`）
+   - 检测到旧参数时，自动转换为配置并显示弃用警告
+   - 建议过渡期：2-3 个版本周期（约 3-6 个月）
+   - 示例警告信息：`DeprecationWarning: --bib 参数将在 v2.0 中移除，请使用 bibguard.yaml 配置文件`
 
 ### 如果不合并：
 
