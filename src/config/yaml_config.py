@@ -14,6 +14,7 @@ class FilesConfig:
     """File path configuration."""
     bib: str = ""
     tex: str = ""
+    input_dir: str = ""  # Directory to recursive search for .tex and .bib files
     output_dir: str = "bibguard_output"  # Output directory for all generated files
 
 
@@ -114,6 +115,10 @@ class BibGuardConfig:
     llm: LLMConfig = field(default_factory=LLMConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
     
+    # Internal fields to store discovered files in directory mode
+    _bib_files: List[Path] = field(default_factory=list)
+    _tex_files: List[Path] = field(default_factory=list)
+    
     # Path to the config file (for resolving relative paths)
     _config_dir: Path = field(default_factory=lambda: Path.cwd())
     
@@ -131,6 +136,10 @@ class BibGuardConfig:
     @property
     def tex_path(self) -> Path:
         return self.resolve_path(self.files.tex)
+    
+    @property
+    def input_dir_path(self) -> Path:
+        return self.resolve_path(self.files.input_dir)
     
     @property
     def output_dir_path(self) -> Path:
@@ -156,6 +165,7 @@ def load_config(config_path: str) -> BibGuardConfig:
         config.files = FilesConfig(
             bib=files.get('bib', ''),
             tex=files.get('tex', ''),
+            input_dir=files.get('input_dir', ''),
             output_dir=files.get('output_dir', 'bibguard_output')
         )
     

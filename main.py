@@ -96,20 +96,44 @@ Usage Examples:
         sys.exit(1)
     
     # Validate required fields
-    if not config.files.bib:
-        print("Error: bib file path not specified in config")
-        sys.exit(1)
-    if not config.files.tex:
-        print("Error: tex file path not specified in config")
-        sys.exit(1)
+    mode_dir = bool(config.files.input_dir)
     
-    # Validate files exist
-    if not config.bib_path.exists():
-        print(f"Error: Bib file does not exist: {config.bib_path}")
-        sys.exit(1)
-    if not config.tex_path.exists():
-        print(f"Error: TeX file does not exist: {config.tex_path}")
-        sys.exit(1)
+    if mode_dir:
+        input_dir = config.input_dir_path
+        if not input_dir.exists() or not input_dir.is_dir():
+            print(f"Error: Input directory does not exist or is not a directory: {input_dir}")
+            sys.exit(1)
+            
+        tex_files = list(input_dir.rglob("*.tex"))
+        bib_files = list(input_dir.rglob("*.bib"))
+        
+        if not tex_files:
+            print(f"Error: No .tex files found in {input_dir}")
+            sys.exit(1)
+        if not bib_files:
+            print(f"Error: No .bib files found in {input_dir}")
+            sys.exit(1)
+            
+        config._tex_files = tex_files
+        config._bib_files = bib_files
+    else:
+        if not config.files.bib:
+            print("Error: bib file path not specified in config")
+            sys.exit(1)
+        if not config.files.tex:
+            print("Error: tex file path not specified in config")
+            sys.exit(1)
+        
+        # Validate files exist
+        if not config.bib_path.exists():
+            print(f"Error: Bib file does not exist: {config.bib_path}")
+            sys.exit(1)
+        if not config.tex_path.exists():
+            print(f"Error: TeX file does not exist: {config.tex_path}")
+            sys.exit(1)
+        
+        config._tex_files = [config.tex_path]
+        config._bib_files = [config.bib_path]
     
     # Load template if specified
     template = None
@@ -141,17 +165,32 @@ def run_checker(config: BibGuardConfig, template=None):
     if template:
         pass # Skip printing header/info here to keep output clean
     
-    # Parse files
     # Parse files (silent)
     bib_parser = BibParser()
-    entries = bib_parser.parse_file(str(config.bib_path))
+    entries = []
+    for bib_path in config._bib_files:
+        entries.extend(bib_parser.parse_file(str(bib_path)))
     
     tex_parser = TexParser()
-    tex_parser.parse_file(str(config.tex_path))
-    cited_keys = tex_parser.get_all_cited_keys()
+    tex_contents = {}
+    merged_citations = {}
+    merged_all_keys = set()
     
-    # Read TeX content for submission checks
-    tex_content = config.tex_path.read_text(encoding='utf-8', errors='replace')
+    for tex_path in config._tex_files:
+        cits = tex_parser.parse_file(str(tex_path))
+        # Accumulate citations
+        for k, v in cits.items():
+            if k not in merged_citations:
+                merged_citations[k] = []
+            merged_citations[k].extend(v)
+        # Accumulate keys
+        merged_all_keys.update(tex_parser.get_all_cited_keys())
+        # Store content
+        tex_contents[str(tex_path)] = tex_path.read_text(encoding='utf-8', errors='replace')
+    
+    # Inject merged data back into parser for components that use it
+    tex_parser.citations = merged_citations
+    tex_parser.all_keys = merged_all_keys
     
     # Initialize components based on config
     bib_config = config.bibliography
@@ -206,7 +245,10 @@ def run_checker(config: BibGuardConfig, template=None):
         check_preprint_ratio=config.bibliography.check_preprint_ratio,
         preprint_warning_threshold=config.bibliography.preprint_warning_threshold
     )
-    report_gen.set_metadata(str(config.bib_path), str(config.tex_path))
+    report_gen.set_metadata(
+        [str(f) for f in config._bib_files],
+        [str(f) for f in config._tex_files]
+    )
     
     # Run submission quality checks
     submission_results = []
@@ -215,8 +257,12 @@ def run_checker(config: BibGuardConfig, template=None):
     for checker_name in enabled_checkers:
         if checker_name in CHECKER_REGISTRY:
             checker = CHECKER_REGISTRY[checker_name]()
-            results = checker.check(tex_content, {})
-            submission_results.extend(results)
+            for tex_path_str, content in tex_contents.items():
+                results = checker.check(content, {})
+                # Tag results with file path
+                for r in results:
+                    r.file_path = tex_path_str
+                submission_results.extend(results)
     
     # Set results in report generator for summary calculation
     report_gen.set_submission_results(submission_results, template)
@@ -285,6 +331,7 @@ def run_checker(config: BibGuardConfig, template=None):
                             entry.key, ctx.full_context, abstract
                         )
                         eval_result.line_number = ctx.line_number
+                        eval_result.file_path = ctx.file_path
                         evaluations.append(eval_result)
         
         # Create entry report
@@ -344,11 +391,10 @@ def run_checker(config: BibGuardConfig, template=None):
     
     # Copy input files to output directory
     import shutil
-    bib_copy_path = output_dir / config.bib_path.name
-    tex_copy_path = output_dir / config.tex_path.name
-    
-    shutil.copy2(config.bib_path, bib_copy_path)
-    shutil.copy2(config.tex_path, tex_copy_path)
+    for bib_path in config._bib_files:
+        shutil.copy2(bib_path, output_dir / bib_path.name)
+    for tex_path in config._tex_files:
+        shutil.copy2(tex_path, output_dir / tex_path.name)
     # 1. Bibliography Report
     bib_report_path = output_dir / "bibliography_report.md"
     report_gen.save_bibliography_report(str(bib_report_path))
@@ -365,21 +411,43 @@ def run_checker(config: BibGuardConfig, template=None):
         # 3. Line-by-Line Report
         from src.report.line_report import generate_line_report
         line_report_path = output_dir / "line_by_line_report.md"
-        generate_line_report(
-            tex_content=tex_content,
-            tex_path=str(config.tex_path),
-            results=submission_results,
-            output_path=str(line_report_path)
-        )
+        
+        # For multiple files, we generate one big report with sections
+        all_line_reports = []
+        for tex_path_str, content in tex_contents.items():
+            file_results = [r for r in submission_results if r.file_path == tex_path_str]
+            if not file_results:
+                continue
+                
+            from src.report.line_report import LineByLineReportGenerator
+            gen = LineByLineReportGenerator(content, tex_path_str)
+            gen.add_results(file_results)
+            all_line_reports.append(gen.generate())
+            
+        if all_line_reports:
+            with open(line_report_path, 'w', encoding='utf-8') as f:
+                f.write("\n\n".join(all_line_reports))
     
     # 4. Clean bib file (if generated earlier)
     if bib_config.check_usage and usage_checker:
         used_entries = [er.entry for er in report_gen.entries if er.usage and er.usage.is_used]
         if used_entries:
-            clean_bib_path = output_dir / f"{config.bib_path.stem}_only_used.bib"
             try:
                 keys_to_keep = {entry.key for entry in used_entries}
-                bib_parser.filter_file(str(config.bib_path), str(clean_bib_path), keys_to_keep)
+                # If multiple bibs, we merge them into one cleaned file
+                # or just use the first one if it's single mode.
+                # For now, let's just use a default name if multiple.
+                if len(config._bib_files) == 1:
+                    clean_bib_path = output_dir / f"{config._bib_files[0].stem}_only_used.bib"
+                    bib_parser.filter_file(str(config._bib_files[0]), str(clean_bib_path), keys_to_keep)
+                else:
+                    clean_bib_path = output_dir / "merged_only_used.bib"
+                    # We need a way to filter multiple files into one.
+                    # BibParser.filter_file currently takes one input.
+                    # Let's just write all used entries to a new file.
+                    with open(clean_bib_path, 'w', encoding='utf-8') as f:
+                        for entry in used_entries:
+                            f.write(entry.raw + "\n\n")
             except Exception as e:
                 pass
     

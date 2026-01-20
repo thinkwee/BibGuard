@@ -31,8 +31,10 @@ class ReportGenerator:
         self.entries: list[EntryReport] = []
         self.missing_citations: list[str] = []
         self.duplicate_groups: list[DuplicateGroup] | None = None  # None means check not run
-        self.bib_file: str = ""
-        self.tex_file: str = ""
+        self.bib_files: list[str] = []
+        self.tex_files: list[str] = []
+        self.bib_file: str = "" # Keep for backward compatibility/single file
+        self.tex_file: str = "" # Keep for backward compatibility/single file
         self.minimal_verified = minimal_verified  # Whether to show minimal info for verified entries
         self.submission_results: List[CheckResult] = []  # Submission quality check results
         self.template = None  # Conference template if used
@@ -44,10 +46,21 @@ class ReportGenerator:
         """Add an entry report."""
         self.entries.append(report)
     
-    def set_metadata(self, bib_file: str, tex_file: str):
+    def set_metadata(self, bib_files: str | list[str], tex_files: str | list[str]):
         """Set source file information."""
-        self.bib_file = bib_file
-        self.tex_file = tex_file
+        if isinstance(bib_files, str):
+            self.bib_files = [bib_files]
+            self.bib_file = bib_files
+        else:
+            self.bib_files = bib_files
+            self.bib_file = bib_files[0] if bib_files else ""
+            
+        if isinstance(tex_files, str):
+            self.tex_files = [tex_files]
+            self.tex_file = tex_files
+        else:
+            self.tex_files = tex_files
+            self.tex_file = tex_files[0] if tex_files else ""
     
     def set_missing_citations(self, missing: list[str]):
         """Set list of citations without bib entries."""
@@ -221,8 +234,8 @@ class ReportGenerator:
     
     def _generate_header(self) -> list[str]:
         """Generate report header."""
-        bib_name = Path(self.bib_file).name if self.bib_file else "N/A"
-        tex_name = Path(self.tex_file).name if self.tex_file else "N/A"
+        bib_names = ", ".join([f"`{Path(f).name}`" for f in self.bib_files]) if self.bib_files else "N/A"
+        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         return [
@@ -232,8 +245,8 @@ class ReportGenerator:
             "",
             "| File Type | Filename |",
             "|-----------|----------|",
-            f"| **Bib File** | `{bib_name}` |",
-            f"| **TeX File** | `{tex_name}` |"
+            f"| **Bib File(s)** | {bib_names} |",
+            f"| **TeX File(s)** | {tex_names} |"
         ]
 
     def _generate_disclaimer(self) -> list[str]:
@@ -520,8 +533,13 @@ class ReportGenerator:
             for eval_res in report.evaluations:
                 score_icon = "🟢" if eval_res.relevance_score >= 4 else ("🟡" if eval_res.relevance_score == 3 else "🔴")
                 lines.append(f"  - {score_icon} **Score {eval_res.relevance_score}/5** ({eval_res.score_label})")
+                loc = []
+                if eval_res.file_path:
+                    loc.append(f"File: `{Path(eval_res.file_path).name}`")
                 if eval_res.line_number:
-                    lines.append(f"    - Line {eval_res.line_number}")
+                    loc.append(f"Line {eval_res.line_number}")
+                if loc:
+                    lines.append(f"    - {' | '.join(loc)}")
                 lines.append(f"    - *\"{eval_res.explanation}\"*")
 
         lines.append("")
@@ -577,8 +595,13 @@ class ReportGenerator:
             lines.append("")
             for result in errors:
                 lines.append(f"- **{result.message}**")
+                loc = []
+                if result.file_path:
+                    loc.append(f"File: `{Path(result.file_path).name}`")
                 if result.line_number:
-                    lines.append(f"  - Line {result.line_number}")
+                    loc.append(f"Line {result.line_number}")
+                if loc:
+                    lines.append(f"  - {' | '.join(loc)}")
                 if result.line_content:
                     lines.append(f"  - `{result.line_content[:80]}`")
                 if result.suggestion:
@@ -591,8 +614,13 @@ class ReportGenerator:
             lines.append("")
             for result in warnings:
                 lines.append(f"- {result.message}")
+                loc = []
+                if result.file_path:
+                    loc.append(f"File: `{Path(result.file_path).name}`")
                 if result.line_number:
-                    lines.append(f"  - Line {result.line_number}")
+                    loc.append(f"Line {result.line_number}")
+                if loc:
+                    lines.append(f"  - {' | '.join(loc)}")
                 if result.suggestion:
                     lines.append(f"  - 💡 *{result.suggestion}*")
             lines.append("")
@@ -605,8 +633,13 @@ class ReportGenerator:
             lines.append("")
             for result in infos:
                 lines.append(f"- {result.message}")
+                loc = []
+                if result.file_path:
+                    loc.append(f"File: `{Path(result.file_path).name}`")
                 if result.line_number:
-                    lines.append(f"  - Line {result.line_number}")
+                    loc.append(f"Line {result.line_number}")
+                if loc:
+                    lines.append(f"  - {' | '.join(loc)}")
                 if result.suggestion:
                     lines.append(f"  - 💡 *{result.suggestion}*")
             lines.append("")
@@ -638,12 +671,12 @@ class ReportGenerator:
         lines.append("")
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
-        bib_name = Path(self.bib_file).name if self.bib_file else "N/A"
-        tex_name = Path(self.tex_file).name if self.tex_file else "N/A"
+        bib_names = ", ".join([f"`{Path(f).name}`" for f in self.bib_files]) if self.bib_files else "N/A"
+        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
         lines.append("| File Type | Filename |")
         lines.append("|-----------|----------|")
-        lines.append(f"| **Bib File** | `{bib_name}` |")
-        lines.append(f"| **TeX File** | `{tex_name}` |")
+        lines.append(f"| **Bib File(s)** | {bib_names} |")
+        lines.append(f"| **TeX File(s)** | {tex_names} |")
         lines.append("")
         
         # Disclaimer
@@ -709,8 +742,8 @@ class ReportGenerator:
         lines.append("")
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
-        tex_name = Path(self.tex_file).name if self.tex_file else "N/A"
-        lines.append(f"**TeX File:** `{tex_name}`")
+        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
+        lines.append(f"**TeX File(s):** {tex_names}")
         lines.append("")
         
         if template:

@@ -4,6 +4,7 @@ LaTeX file parser for citation extraction.
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 
 @dataclass
@@ -16,6 +17,7 @@ class CitationContext:
     context_after: str   # Text after citation
     full_context: str    # Full surrounding context
     raw_line: str        # The raw line containing the citation
+    file_path: Optional[str] = None # Added
 
 
 class TexParser:
@@ -44,6 +46,7 @@ class TexParser:
         self.all_keys: set[str] = set()
         self.lines: list[str] = []
         self.content: str = ""
+        self.current_filepath: Optional[str] = None
     
     def parse_file(self, filepath: str) -> dict[str, list[CitationContext]]:
         """Parse a .tex file and extract all citations."""
@@ -54,6 +57,7 @@ class TexParser:
         with open(path, 'r', encoding='utf-8', errors='replace') as f:
             content = f.read()
         
+        self.current_filepath = filepath
         return self.parse_content(content)
     
     def parse_content(self, content: str) -> dict[str, list[CitationContext]]:
@@ -99,7 +103,8 @@ class TexParser:
                         context_before=context['before'],
                         context_after=context['after'],
                         full_context=context['full'],
-                        raw_line=line
+                        raw_line=line,
+                        file_path=self.current_filepath
                     )
                     
                     if key not in self.citations:

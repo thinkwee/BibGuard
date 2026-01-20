@@ -31,6 +31,7 @@ class EvaluationResult:
     context_used: str
     abstract_used: str
     line_number: Optional[int] = None
+    file_path: Optional[str] = None
     error: Optional[str] = None
     
     @property

@@ -28,6 +28,7 @@ class CheckResult:
     line_number: Optional[int] = None
     line_content: Optional[str] = None
     suggestion: Optional[str] = None
+    file_path: Optional[str] = None
     
     def to_dict(self) -> dict:
         return {
@@ -37,7 +38,8 @@ class CheckResult:
             'message': self.message,
             'line': self.line_number,
             'content': self.line_content,
-            'suggestion': self.suggestion
+            'suggestion': self.suggestion,
+            'file_path': self.file_path
         }
 
 

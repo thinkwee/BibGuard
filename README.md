@@ -46,12 +46,22 @@ pip install -r requirements.txt
 python main.py --init
 ```
 
-This creates `config.yaml`. Edit it to set your `.bib` and `.tex` file paths:
+This creates `config.yaml`. Edit it to set your file paths. You have two modes:
 
+#### Option A: Single File Mode
+Best for individual papers.
 ```yaml
 files:
   bib: "paper.bib"
   tex: "paper.tex"
+  output_dir: "bibguard_output"
+```
+
+#### Option B: Directory Scan Mode
+Best for large projects or a collection of papers. BibGuard will recursively search for all `.tex` and `.bib` files.
+```yaml
+files:
+  input_dir: "./my_project_dir"
   output_dir: "bibguard_output"
 ```
 

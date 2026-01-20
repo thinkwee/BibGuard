@@ -17,6 +17,11 @@ files:
   # Required: Path to your .tex LaTeX source file
   tex: "test.tex"
   
+  # Optional: Directory path for recursive scanning (Experimental)
+  # When set, BibGuard will recursively search for all .tex and .bib files in this directory.
+  # This mode is parallel to 'bib' and 'tex'. Use either this OR bib/tex.
+  # input_dir: "./paper_project"
+  
   # Output directory for all generated reports and files (default: bibguard_output)
   # All outputs including reports, cleaned .bib, and input file copies will be saved here
   output_dir: "test"
