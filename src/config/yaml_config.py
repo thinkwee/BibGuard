@@ -31,7 +31,6 @@ class BibliographyConfig:
 @dataclass
 class SubmissionConfig:
     """Submission quality check configuration."""
-    enabled: bool = True
     
     # Format checks
     caption: bool = True
@@ -54,9 +53,6 @@ class SubmissionConfig:
     
     def get_enabled_checkers(self) -> List[str]:
         """Get list of enabled checker names."""
-        if not self.enabled:
-            return []
-        
         checkers = []
         if self.caption:
             checkers.append('caption')
@@ -182,7 +178,6 @@ def load_config(config_path: str) -> BibGuardConfig:
     if 'submission' in data:
         sub = data['submission']
         config.submission = SubmissionConfig(
-            enabled=sub.get('enabled', True),
             caption=sub.get('caption', True),
             reference=sub.get('reference', True),
             formatting=sub.get('formatting', True),
@@ -268,7 +263,6 @@ bibliography:
   check_relevance: false
 
 submission:
-  enabled: true
   caption: true
   reference: true
   formatting: true

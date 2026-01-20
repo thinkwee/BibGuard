@@ -210,19 +210,16 @@ def run_checker(config: BibGuardConfig, template=None):
     
     # Run submission quality checks
     submission_results = []
-    # Run submission quality checks (silent)
-    submission_results = []
-    if config.submission.enabled:
-        enabled_checkers = config.submission.get_enabled_checkers()
-        
-        for checker_name in enabled_checkers:
-            if checker_name in CHECKER_REGISTRY:
-                checker = CHECKER_REGISTRY[checker_name]()
-                results = checker.check(tex_content, {})
-                submission_results.extend(results)
-        
-        # Set results in report generator for summary calculation
-        report_gen.set_submission_results(submission_results, template)
+    enabled_checkers = config.submission.get_enabled_checkers()
+    
+    for checker_name in enabled_checkers:
+        if checker_name in CHECKER_REGISTRY:
+            checker = CHECKER_REGISTRY[checker_name]()
+            results = checker.check(tex_content, {})
+            submission_results.extend(results)
+    
+    # Set results in report generator for summary calculation
+    report_gen.set_submission_results(submission_results, template)
     
     # Check for duplicates (silent)
     if bib_config.check_duplicates and duplicate_detector:
