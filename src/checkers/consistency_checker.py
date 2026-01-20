@@ -39,15 +39,98 @@ class ConsistencyChecker(BaseChecker):
         'few-shot': ['few shot', 'fewshot'],
         'in-context': ['in context', 'incontext'],
         
-        # British vs American
+        # American vs British English (comprehensive list)
+        # -or/-our endings
         'color': ['colour'],
         'behavior': ['behaviour'],
-        'modeling': ['modelling'],
-        'optimization': ['optimisation'],
-        'generalization': ['generalisation'],
-        'regularization': ['regularisation'],
+        'favor': ['favour'],
+        'honor': ['honour'],
+        'labor': ['labour'],
+        'neighbor': ['neighbour'],
+        'rumor': ['rumour'],
+        'vapor': ['vapour'],
+        
+        # -ize/-ise endings
         'analyze': ['analyse'],
+        'characterize': ['characterise'],
+        'generalize': ['generalise'],
+        'initialize': ['initialise'],
+        'maximize': ['maximise'],
+        'minimize': ['minimise'],
+        'normalize': ['normalise'],
+        'optimize': ['optimise'],
+        'organize': ['organise'],
+        'realize': ['realise'],
+        'recognize': ['recognise'],
+        'specialize': ['specialise'],
+        'standardize': ['standardise'],
+        'summarize': ['summarise'],
         'utilize': ['utilise'],
+        'visualize': ['visualise'],
+        'categorize': ['categorise'],
+        'emphasize': ['emphasise'],
+        'hypothesize': ['hypothesise'],
+        'prioritize': ['prioritise'],
+        'synchronize': ['synchronise'],
+        
+        # -ization/-isation endings
+        'generalization': ['generalisation'],
+        'initialization': ['initialisation'],
+        'maximization': ['maximisation'],
+        'minimization': ['minimisation'],
+        'normalization': ['normalisation'],
+        'optimization': ['optimisation'],
+        'organization': ['organisation'],
+        'realization': ['realisation'],
+        'regularization': ['regularisation'],
+        'specialization': ['specialisation'],
+        'standardization': ['standardisation'],
+        'summarization': ['summarisation'],
+        'utilization': ['utilisation'],
+        'visualization': ['visualisation'],
+        'categorization': ['categorisation'],
+        'characterization': ['characterisation'],
+        'parametrization': ['parametrisation'],
+        'quantization': ['quantisation'],
+        
+        # -er/-re endings
+        'center': ['centre'],
+        'fiber': ['fibre'],
+        'meter': ['metre'],
+        'liter': ['litre'],
+        
+        # -l-/-ll- (American single, British double)
+        'modeling': ['modelling'],
+        'labeled': ['labelled'],
+        'labeling': ['labelling'],
+        'traveled': ['travelled'],
+        'traveling': ['travelling'],
+        'canceled': ['cancelled'],
+        'canceling': ['cancelling'],
+        'signaled': ['signalled'],
+        'signaling': ['signalling'],
+        
+        # -og/-ogue endings
+        'analog': ['analogue'],
+        'catalog': ['catalogue'],
+        'dialog': ['dialogue'],
+        
+        # -ense/-ence endings
+        'defense': ['defence'],
+        'license': ['licence'],
+        'offense': ['offence'],
+        
+        # Other common differences
+        'gray': ['grey'],
+        'artifact': ['artefact'],
+        'program': ['programme'],  # Note: 'program' is standard in computing
+        'skeptical': ['sceptical'],
+        'aluminum': ['aluminium'],
+        
+        # Verb forms
+        'learned': ['learnt'],
+        'burned': ['burnt'],
+        'spelled': ['spelt'],
         
         # Common term variants
         'dataset': ['data set', 'data-set'],

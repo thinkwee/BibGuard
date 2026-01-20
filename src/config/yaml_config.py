@@ -23,6 +23,8 @@ class BibliographyConfig:
     check_metadata: bool = True
     check_usage: bool = True
     check_duplicates: bool = True
+    check_preprint_ratio: bool = True
+    preprint_warning_threshold: float = 0.50
     check_relevance: bool = False
 
 
@@ -171,6 +173,8 @@ def load_config(config_path: str) -> BibGuardConfig:
             check_metadata=bib.get('check_metadata', True),
             check_usage=bib.get('check_usage', True),
             check_duplicates=bib.get('check_duplicates', True),
+            check_preprint_ratio=bib.get('check_preprint_ratio', True),
+            preprint_warning_threshold=bib.get('preprint_warning_threshold', 0.50),
             check_relevance=bib.get('check_relevance', False)
         )
     
@@ -226,7 +230,7 @@ def load_config(config_path: str) -> BibGuardConfig:
 
 def find_config_file() -> Optional[Path]:
     """Find config file in current directory or parent directories."""
-    config_names = ['bibguard.yaml', 'bibguard.yml', '.bibguard.yaml', '.bibguard.yml']
+    config_names = ['config.yaml', 'bibguard.yaml', 'bibguard.yml', '.bibguard.yaml', '.bibguard.yml']
     
     current = Path.cwd()
     
@@ -244,7 +248,7 @@ def find_config_file() -> Optional[Path]:
     return None
 
 
-def create_default_config(output_path: str = "bibguard.yaml"):
+def create_default_config(output_path: str = "config.yaml"):
     """Create a default config file."""
     default = """# BibGuard Configuration File
 
@@ -259,6 +263,8 @@ bibliography:
   check_metadata: true
   check_usage: true
   check_duplicates: true
+  check_preprint_ratio: true
+  preprint_warning_threshold: 0.50
   check_relevance: false
 
 submission:

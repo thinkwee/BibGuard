@@ -20,7 +20,7 @@ pip install -r requirements.txt
 python main.py --init
 ```
 
-This creates `bibguard.yaml`. Edit it to set your `.bib` and `.tex` file paths.
+This creates `config.yaml`. Edit it to set your `.bib` and `.tex` file paths.
 
 ### 3. Run Check
 
@@ -36,7 +36,7 @@ python main.py
 
 ## 📋 Essential Configuration
 
-Edit `bibguard.yaml` to customize checks. Only the most important settings are shown below:
+Edit `config.yaml` to customize checks. Only the most important settings are shown below:
 
 ```yaml
 files:
@@ -48,6 +48,7 @@ bibliography:
   check_metadata: true      # Validate against online databases (arXiv, DBLP, etc.)
   check_usage: true         # Find unused/missing entries
   check_duplicates: true    # Detect duplicate entries
+  check_preprint_ratio: true  # Warn if >50% references are preprints
 
 submission:
   enabled: true             # Enable LaTeX quality checks
@@ -57,11 +58,11 @@ submission:
   reference: true           # Cross-reference integrity
   formatting: true          # Citation spacing, blank lines
   equation: true            # Equation punctuation, numbering
-  sentence: true            # Sentence length, weak starters
+  sentence: true            # Weak starters, hedging language
   consistency: true         # Terminology, hyphenation
   ai_artifacts: true        # AI-generated text detection
   anonymization: true       # Double-blind compliance
-  citation_quality: true    # Citation age, balance
+  citation_quality: true    # Old citations (>30 years)
 ```
 
 ## 🛠 Advanced Usage (LLM)

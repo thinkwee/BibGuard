@@ -2,9 +2,7 @@
 Number and unit formatting checker.
 
 Validates:
-- Numbers 0-9 should be spelled out (except in formulas/tables)
-- Consistent unit formatting (space between number and unit)
-- Percentage format consistency
+- Percentage format consistency (no space before %, consistent use of % vs 'percent')
 """
 import re
 from typing import List
@@ -13,28 +11,11 @@ from .base import BaseChecker, CheckResult, CheckSeverity
 
 
 class NumberChecker(BaseChecker):
-    """Check number and unit formatting."""
+    """Check percentage formatting."""
     
     name = "number"
     display_name = "Numbers & Units"
-    description = "Check number spelling and unit formatting"
-    
-    # Small numbers that should be spelled out
-    SMALL_NUMBERS = re.compile(r'\b([0-9])\b(?!\s*[%°×\.\d])')
-    
-    # Units that should have space before them
-    UNITS_NEED_SPACE = [
-        'GB', 'MB', 'KB', 'TB', 'PB',  # Storage
-        'GHz', 'MHz', 'kHz', 'Hz',  # Frequency
-        'ms', 'ns', 'μs', 'us',  # Time
-        'km', 'cm', 'mm', 'm',  # Length (careful with 'm')
-        'kg', 'mg', 'g',  # Weight
-        'FLOPs', 'FLOPS', 'GFLOPS', 'TFLOPS',  # Compute
-        'K', 'M', 'B', 'T',  # Large number suffixes
-    ]
-    
-    # Pattern for number directly attached to unit (no space)
-    NO_SPACE_PATTERN = None  # Built in __init__
+    description = "Check percentage formatting"
     
     # Percentage patterns
     PERCENT_WITH_SPACE = re.compile(r'\d\s+%')  # "50 %" is wrong
@@ -42,12 +23,6 @@ class NumberChecker(BaseChecker):
     # Inconsistent percentage usage
     PERCENT_WORD = re.compile(r'\d+\s+percent\b', re.IGNORECASE)
     PERCENT_SYMBOL = re.compile(r'\d+%')
-    
-    def __init__(self):
-        super().__init__()
-        # Build pattern for units without space
-        units_pattern = '|'.join(re.escape(u) for u in self.UNITS_NEED_SPACE)
-        self.NO_SPACE_PATTERN = re.compile(rf'(\d)({units_pattern})\b')
     
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
         results = []

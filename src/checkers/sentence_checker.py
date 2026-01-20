@@ -2,7 +2,6 @@
 Sentence quality checker.
 
 Validates:
-- Sentence length (too long sentences)
 - Weak sentence starters
 - Common writing issues
 """
@@ -17,11 +16,7 @@ class SentenceChecker(BaseChecker):
     
     name = "sentence"
     display_name = "Sentence Quality"
-    description = "Check sentence length and weak patterns"
-    
-    # Maximum recommended words per sentence
-    MAX_SENTENCE_WORDS = 50
-    WARNING_SENTENCE_WORDS = 40
+    description = "Check weak patterns and writing issues"
     
     # Weak sentence starters (avoid these)
     WEAK_STARTERS = [
@@ -64,132 +59,6 @@ class SentenceChecker(BaseChecker):
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
         results = []
         lines = tex_content.split('\n')
-        
-        # Track which lines we've already reported on
-        reported_lines = set()
-        
-        # --- Part 1: Check sentence lengths with correct line mapping ---
-        
-        in_document = True
-        # Check if it looks like a full document (has documentclass)
-        for i in range(min(20, len(lines))):
-            if '\\documentclass' in lines[i]:
-                in_document = False
-                break
-        
-        in_math_env = False
-        in_twocolumn = False
-        
-        # Tokenize with line numbers
-        words_with_locs = []
-        for line_num, line in enumerate(lines, 1):
-            # Handle document boundaries
-            if not in_document:
-                if '\\begin{document}' in line:
-                    in_document = True
-                continue
-            
-            if '\\end{document}' in line:
-                break
-            
-            # Skip math environments
-            if re.search(r'\\begin\{(equation|align|gather|split|multline|table|figure|algorithm)\*?\}', line):
-                in_math_env = True
-            
-            if in_math_env:
-                if re.search(r'\\end\{(equation|align|gather|split|multline|table|figure|algorithm)\*?\}', line):
-                    in_math_env = False
-                continue
-            
-            # Skip twocolumn argument (title/abstract block)
-            if '\\twocolumn[' in line:
-                in_twocolumn = True
-            
-            if in_twocolumn:
-                if ']' in line and not line.strip().startswith('%'): # Check for closing bracket, ignoring comments
-                     # Naive check: assumes ] is at end of block
-                     in_twocolumn = False
-                continue
-                
-            if self._is_comment_line(line):
-                continue
-            
-            # Clean line for word counting
-            clean_line = self._remove_line_comment(line)
-            # Remove begin/end environments
-            clean_line = re.sub(r'\\(begin|end)\{[^}]*\}', ' ', clean_line)
-            # Remove math
-            clean_line = re.sub(r'\$[^$]+\$', ' ', clean_line)
-            clean_line = re.sub(r'\\\[.*?\\\]', ' ', clean_line)
-            # Remove commands but keep args (naive)
-            clean_line = re.sub(r'\\[a-zA-Z]+\*?(\[[^\]]*\])*\{([^}]*)\}', r'\2', clean_line)
-            clean_line = re.sub(r'\\[a-zA-Z]+\*?', ' ', clean_line)
-            clean_line = re.sub(r'[{}]', '', clean_line)
-            
-            for word in clean_line.split():
-                words_with_locs.append((word, line_num))
-        
-        # Analyze sentences
-        current_sentence_words = []
-        current_start_line = -1
-        
-        # Common abbreviations that don't end a sentence
-        abbrevs = {
-            'al.', 'fig.', 'eq.', 'sec.', 'tab.', 'i.e.', 'e.g.', 'vs.', 'cf.', 
-            'dr.', 'mr.', 'ms.', 'prof.', 'etc.', 'vol.', 'no.', 'p.', 'pp.',
-            'dept.', 'univ.', 'inst.', 'assn.', 'soc.', 'conf.', 'proc.'
-        }
-        
-        for i, (word, line_num) in enumerate(words_with_locs):
-            if not current_sentence_words:
-                current_start_line = line_num
-            
-            current_sentence_words.append(word)
-            
-            # Check for sentence end
-            # Matches . ! ? followed by optional ) ] } " '
-            if re.search(r'[.!?][)\]}"\']*$', word):
-                # Check if it's an abbreviation
-                # Remove trailing punctuation for check
-                clean_word = re.sub(r'[)\]}"\']+$', '', word).lower()
-                if clean_word in abbrevs:
-                    continue
-                
-                # Check if it's a single initial like "A." in "A. Name"
-                if len(clean_word) <= 2 and clean_word.endswith('.'):
-                    continue
-                
-                # Check sentence length
-                word_count = len(current_sentence_words)
-                if word_count > self.MAX_SENTENCE_WORDS:
-                    if current_start_line not in reported_lines:
-                        # Find the actual line content for better reporting
-                        line_snippet = self._get_line_content(tex_content, current_start_line)
-                        results.append(self._create_result(
-                            passed=False,
-                            severity=CheckSeverity.WARNING,
-                            message=f"Very long sentence ({word_count} words)",
-                            line_number=current_start_line,
-                            line_content=line_snippet[:100],
-                            suggestion=f"Consider breaking into shorter sentences (aim for <{self.MAX_SENTENCE_WORDS} words)"
-                        ))
-                        reported_lines.add(current_start_line)
-                elif word_count > self.WARNING_SENTENCE_WORDS:
-                    if current_start_line not in reported_lines:
-                        line_snippet = self._get_line_content(tex_content, current_start_line)
-                        results.append(self._create_result(
-                            passed=False,
-                            severity=CheckSeverity.INFO,
-                            message=f"Long sentence ({word_count} words)",
-                            line_number=current_start_line,
-                            line_content=line_snippet[:100],
-                            suggestion="Consider if this can be simplified"
-                        ))
-                        reported_lines.add(current_start_line)
-                
-                current_sentence_words = []
-        
-        # --- Part 2: Check weak patterns line-by-line ---
         
         for line_num, line in enumerate(lines, 1):
             # Skip commented lines using base class method

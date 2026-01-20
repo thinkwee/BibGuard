@@ -83,11 +83,7 @@ class AIArtifactsChecker(BaseChecker):
         (r'\[([^\]]+)\]\(([^)]+)\)', "Markdown link"),
     ]
     
-    # Extended AI patterns (Removed ambiguous vocabulary checks)
-    EXTENDED_AI_PATTERNS = []
 
-    # Suspicious AI vocabulary (Removed ambiguous vocabulary checks)
-    AI_VOCABULARY_PATTERNS = []
     
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
         results = []

@@ -36,6 +36,7 @@ template: ""
 bibliography:
   # Metadata Validation - Verify bib entries against online databases (arXiv, CrossRef, etc.)
   # Detects incorrect titles, authors, venues, and publication years
+  # ⚠️ It will take some time to check metadata since it needs to query multiple online sources. Make it to false if you don't need to check metadata.
   check_metadata: true
   
   # Usage Check - Detect unused bib entries and missing citations
@@ -45,6 +46,11 @@ bibliography:
   # Duplicate Detection - Find duplicate entries with different keys
   # Uses fuzzy matching on titles and DOIs to identify the same paper cited multiple times
   check_duplicates: true
+  
+  # Preprint Ratio Check - Warn if too many references are preprints
+  # Detects arXiv, bioRxiv, and other preprints. Warns if ratio exceeds threshold.
+  check_preprint_ratio: true
+  preprint_warning_threshold: 0.50  # Warn if more than 50% of used entries are preprints
   
   # Relevance Assessment - Use LLM to evaluate if citations match their context
   # Requires LLM configuration (see llm section below). Disabled by default due to API costs.
@@ -100,14 +106,14 @@ submission:
   
   # Acronym Definitions - Ensure acronyms are defined on first use
   # Example: "Natural Language Processing (NLP)" before using "NLP" alone
-  # acronym: true
+  acronym: true
   
-  # Number Formatting - Check small numbers are spelled out, units have proper spacing
-  # Examples: "three experiments" not "3 experiments", "10 ms" not "10ms"
+  # Number Formatting - Check percentage formatting consistency
+  # Ensures no space before % sign and consistent use of '%' vs 'percent'
   number: true
   
   # Citation Quality - Flag outdated references and citation formatting issues
-  # Warns about papers older than 5 years in fast-moving fields
+  # Warns about papers older than 30 years and checks citation formatting (et al., hardcoded citations)
   citation_quality: true
   
   # ─────────────────────────────────────────────────────────────────────────────

@@ -31,21 +31,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Examples:
-  python main.py                      # Use bibguard.yaml in current directory
+  python main.py                      # Auto-detect config.yaml in current directory
   python main.py --config my.yaml     # Use specified config file
-  python main.py --init               # Create default config file
+  python main.py --init               # Create default config.yaml
   python main.py --list-templates     # List available conference templates
         """
     )
     
     parser.add_argument(
         "--config", "-c",
-        help="Config file path (default: auto-detect bibguard.yaml)"
+        help="Config file path (default: auto-detect config.yaml)"
     )
     parser.add_argument(
         "--init",
         action="store_true",
-        help="Create default config file in current directory"
+        help="Create default config.yaml in current directory"
     )
     parser.add_argument(
         "--list-templates",
@@ -58,8 +58,12 @@ Usage Examples:
     # Handle --init
     if args.init:
         output = create_default_config()
-        print(f"✓ Created config file: {output}")
-        print("  Please edit the bib and tex paths in the file, then run: python main.py")
+        print(f"✓ Created configuration file: {output}")
+        print("")
+        print("  Next steps:")
+        print("  1. Edit the 'bib' and 'tex' paths in config.yaml")
+        print("  2. Run: python main.py --config config.yaml")
+        print("")
         sys.exit(0)
     
     # Handle --list-templates
@@ -76,8 +80,10 @@ Usage Examples:
             config_path = str(found)
         else:
             print("Error: Config file not found")
-            print("Please run 'python main.py --init' to create a config file")
+            print("")
+            print("Please run 'python main.py --init' to create config.yaml")
             print("Or use 'python main.py --config <path>' to specify a config file")
+            print("")
             sys.exit(1)
     
     try:
@@ -195,7 +201,11 @@ def run_checker(config: BibGuardConfig, template=None):
             usage_checker = UsageChecker(tex_parser)
     
     # Initialize report generator
-    report_gen = ReportGenerator(minimal_verified=config.output.minimal_verified)
+    report_gen = ReportGenerator(
+        minimal_verified=config.output.minimal_verified,
+        check_preprint_ratio=config.bibliography.check_preprint_ratio,
+        preprint_warning_threshold=config.bibliography.preprint_warning_threshold
+    )
     report_gen.set_metadata(str(config.bib_path), str(config.tex_path))
     
     # Run submission quality checks

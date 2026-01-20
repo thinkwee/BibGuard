@@ -2,10 +2,8 @@
 Citation quality checker.
 
 Validates:
-- Old citations (>10 years) that might need updating
-- Self-citation ratio
-- Preprint vs published paper ratio
-- Citation formatting patterns
+- Old citations (>30 years) that might need updating
+- Citation formatting patterns (et al., hardcoded citations, etc.)
 """
 import re
 from typing import List, Dict
@@ -23,17 +21,9 @@ class CitationQualityChecker(BaseChecker):
     description = "Check citation age, balance, and formatting"
     
     # Thresholds
-    OLD_CITATION_YEARS = 10  # Citations older than this get flagged
-    HIGH_SELF_CITE_RATIO = 0.25  # More than 25% self-citations
-    HIGH_PREPRINT_RATIO = 0.30  # More than 30% preprints
+    OLD_CITATION_YEARS = 30  # Citations older than this get flagged
     
     CURRENT_YEAR = datetime.now().year
-    
-    # Preprint indicators
-    PREPRINT_VENUES = [
-        'arxiv', 'biorxiv', 'medrxiv', 'ssrn', 'preprint', 'openreview',
-        'techreport', 'technical report', 'working paper',
-    ]
     
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
         results = []

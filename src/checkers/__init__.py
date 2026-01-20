@@ -10,6 +10,7 @@ from .sentence_checker import SentenceChecker
 from .consistency_checker import ConsistencyChecker
 from .citation_quality_checker import CitationQualityChecker
 from .equation_checker import EquationChecker
+from .acronym_checker import AcronymChecker
 
 __all__ = [
     'BaseChecker',
@@ -25,6 +26,7 @@ __all__ = [
     'ConsistencyChecker',
     'CitationQualityChecker',
     'EquationChecker',
+    'AcronymChecker',
 ]
 
 
@@ -40,6 +42,7 @@ CHECKER_REGISTRY = {
     'consistency': ConsistencyChecker,
     'citation_quality': CitationQualityChecker,
     'equation': EquationChecker,
+    'acronym': AcronymChecker,
 }
 
 

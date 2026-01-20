@@ -27,7 +27,7 @@ class EntryReport:
 class ReportGenerator:
     """Generates formatted markdown reports."""
     
-    def __init__(self, minimal_verified: bool = False):
+    def __init__(self, minimal_verified: bool = False, check_preprint_ratio: bool = True, preprint_warning_threshold: float = 0.50):
         self.entries: list[EntryReport] = []
         self.missing_citations: list[str] = []
         self.duplicate_groups: list[DuplicateGroup] | None = None  # None means check not run
@@ -36,6 +36,8 @@ class ReportGenerator:
         self.minimal_verified = minimal_verified  # Whether to show minimal info for verified entries
         self.submission_results: List[CheckResult] = []  # Submission quality check results
         self.template = None  # Conference template if used
+        self.check_preprint_ratio = check_preprint_ratio  # Whether to check preprint ratio
+        self.preprint_warning_threshold = preprint_warning_threshold  # Threshold for preprint warning
 
     
     def add_entry_report(self, report: EntryReport):
@@ -272,8 +274,25 @@ class ReportGenerator:
             dup_str = "N/A"
         else:
             dup_str = str(len(self.duplicate_groups))
+        
+        # Preprint detection (only if enabled)
+        preprint_str = "N/A"
+        preprint_warning = []
+        if self.check_preprint_ratio and has_usage:
+            used_entries = [e for e in self.entries if e.usage and e.usage.is_used]
+            if used_entries:
+                preprint_count = sum(1 for e in used_entries if self._is_preprint(e.entry))
+                preprint_ratio = preprint_count / len(used_entries)
+                preprint_str = f"{preprint_count} ({preprint_ratio:.1%})"
 
-        return [
+                # Warning if exceeds threshold
+                if preprint_ratio > self.preprint_warning_threshold:
+                    preprint_warning = [
+                        "",
+                        f"> ⚠️ **High Preprint Ratio Warning:** {preprint_ratio:.1%} of your used references are preprints (arXiv, bioRxiv, etc.). Consider replacing some with peer-reviewed publications if available."
+                    ]
+
+        summary_lines = [
             "## 📊 Summary",
             "",
             "### 📚 Bibliography Statistics",
@@ -287,11 +306,56 @@ class ReportGenerator:
             f"| 🗑️ **Unused** | {unused_str} |",
             f"| 🔄 **Duplicate Groups** | {dup_str} |",
             f"| ❌ **Missing Bib Entries** | {missing_str} |",
+            f"| 📄 **Preprints (Used)** | {preprint_str} |",
+        ]
+        
+        # Add warning if needed
+        if preprint_warning:
+            summary_lines.extend(preprint_warning)
+        
+        summary_lines.extend([
             "",
             "### 📋 LaTeX Quality Checks",
             "",
             self._get_submission_summary()
+        ])
+        
+        return summary_lines
+    
+    def _is_preprint(self, entry: BibEntry) -> bool:
+        """Check if an entry is a preprint."""
+        # Preprint indicators
+        preprint_keywords = [
+            'arxiv', 'biorxiv', 'medrxiv', 'ssrn', 'preprint', 
+            'openreview', 'techreport', 'technical report', 'working paper',
+            'tech report', 'tech. report'
         ]
+        
+        # Check entry type
+        if entry.entry_type.lower() in ['techreport', 'unpublished', 'misc']:
+            # Further check if it's actually a preprint
+            text_to_check = ' '.join([
+                entry.journal.lower(),
+                entry.booktitle.lower(),
+                entry.publisher.lower(),
+                entry.entry_type.lower()
+            ])
+            
+            if any(keyword in text_to_check for keyword in preprint_keywords):
+                return True
+        
+        # Check if arXiv ID exists
+        if entry.has_arxiv:
+            return True
+        
+        # Check journal/booktitle/publisher fields
+        venue_text = ' '.join([
+            entry.journal.lower(),
+            entry.booktitle.lower(),
+            entry.publisher.lower()
+        ])
+        
+        return any(keyword in venue_text for keyword in preprint_keywords)
     
     def _get_submission_summary(self) -> str:
         """Generate submission quality summary table."""
