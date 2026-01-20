@@ -1,97 +1,188 @@
-# BibGuard: Anti-Hallucination Bibliography Auditor
+# BibGuard: Bibliography & LaTeX Quality Auditor
 
-**BibGuard** is your final line of defense against AI-generated hallucinations in academic papers. Designed for **human-in-the-loop self-auditing**, it helps you verify that every citation in your LaTeX project is genuine, accurate, and relevant before you submit.
+**BibGuard** is your comprehensive quality assurance tool for academic papers. It validates bibliography entries against real-world databases and checks LaTeX submission quality to catch errors before you submit.
 
-AI coding assistants and writing tools often hallucinate plausible-sounding but non-existent references. **BibGuard** verifies the existence of every entry against real-world databases (arXiv, Google Scholar) and uses advanced LLMs to double-check that the cited paper actually supports your claims.
-
-🚀 You can checkout beta branch for more experimental features.
+AI coding assistants and writing tools often hallucinate plausible-sounding but non-existent references. **BibGuard** verifies the existence of every entry against multiple databases (arXiv, CrossRef, DBLP, Semantic Scholar, OpenAlex, Google Scholar) and uses advanced LLMs to ensure cited papers actually support your claims.
 
 ## 🛡 Why BibGuard?
 
--   **🚫 Stop Hallucinations**: Instantly flag citations that don't exist or have mismatched metadata.
--   **🔒 Safe & Non-Destructive**: Your original `.bib` file is **never modified**. We generate a detailed report so *you* can make the final decisions.
--   **🧠 Contextual Relevance**: Ensure the paper you cited actually discusses what you claim it does.
--   **⚡ Efficiency Boost**: Drastically reduces the time needed to manually check hundreds of citations.
+-   **🚫 Stop Hallucinations**: Instantly flag citations that don't exist or have mismatched metadata
+-   **📋 LaTeX Quality Checks**: Detect formatting issues, weak writing patterns, and submission compliance problems
+-   **🔒 Safe & Non-Destructive**: Your original files are **never modified** - only detailed reports are generated
+-   **🧠 Contextual Relevance**: Ensure cited papers actually discuss what you claim (with LLM)
+-   **⚡ Efficiency Boost**: Drastically reduce time needed to manually verify hundreds of citations
 
 ## 🚀 Features
 
--   **🔍 Reality Check**: Validates metadata against **arXiv**, **Semantic Scholar**, **DBLP**, **OpenAlex**, **CrossRef**, and **Google Scholar** to catch fake papers.
--   **🤖 AI Relevance Judge**: Uses LLMs to read your citation context and the paper's abstract to score relevance (1-5).
--   **📝 Comprehensive Markdown Report**: Generates a detailed, readable **Markdown report** (`.md`) with prioritized issues for manual verification.
--   **👀 Usage Analysis**: Highlights missing citations (in TeX but not Bib) and unused Bib entries.
--   **👯 Duplicate Detector**: Identifies duplicate entries to keep your Bib file healthy.
+### Bibliography Validation
+-   **🔍 Multi-Source Verification**: Validates metadata against arXiv, CrossRef, DBLP, Semantic Scholar, OpenAlex, and Google Scholar
+-   **🤖 AI Relevance Check**: Uses LLMs to verify citations match their context (optional)
+-   **📊 Preprint Detection**: Warns if >50% of references are preprints (arXiv, bioRxiv, etc.)
+-   **👀 Usage Analysis**: Highlights missing citations and unused bib entries
+-   **👯 Duplicate Detector**: Identifies duplicate entries with fuzzy matching
+
+### LaTeX Quality Checks
+-   **📐 Format Validation**: Caption placement, cross-references, citation spacing, equation punctuation
+-   **✍️ Writing Quality**: Weak sentence starters, hedging language, redundant phrases
+-   **🔤 Consistency**: Spelling variants (US/UK English), hyphenation, terminology
+-   **🤖 AI Artifact Detection**: Conversational AI responses, placeholder text, Markdown remnants
+-   **🔠 Acronym Validation**: Ensures acronyms are defined before use (smart matching)
+-   **🎭 Anonymization**: Checks for identity leaks in double-blind submissions
+-   **📅 Citation Age**: Flags references older than 30 years
 
 ## 📦 Installation
 
-1.  Clone the repository.
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+git clone https://github.com/yourusername/bibguard.git
+cd bibguard
+pip install -r requirements.txt
+```
 
 ## ⚡ Quick Start
 
-Perform a full self-audit (Reality Check + Relevance + Usage Analysis):
+### 1. Initialize Configuration
 
 ```bash
-python main.py --bib paper.bib --tex paper.tex --enable-all
+python main.py --init
 ```
 
-**Note:** This will print a summary to the console and save a detailed `report.md` for your review. It also creates a *separate* `_only_used_entry.bib` file for reference, but leaves your original file untouched.
+This creates `config.yaml`. Edit it to set your `.bib` and `.tex` file paths:
 
-## 🛠 Usage Guide
+```yaml
+files:
+  bib: "paper.bib"
+  tex: "paper.tex"
+  output_dir: "bibguard_output"
+```
 
-### 1. The "Reality Check" (Metadata & Existence)
-Verify that every paper in your bib file actually exists and has correct metadata.
+### 2. Run Full Check
 
 ```bash
-python main.py --bib paper.bib --tex paper.tex --check-metadata
+python main.py
 ```
 
-### 2. The "Relevance Check" (AI Evaluation)
-Use an LLM to ensure you haven't cited a real paper for the wrong reason.
+**Output** (in `bibguard_output/`):
+- `bibliography_report.md` - Bibliography validation results
+- `latex_quality_report.md` - Writing and formatting issues
+- `line_by_line_report.md` - All issues sorted by line number
+- `*_only_used.bib` - Clean bibliography (used entries only)
 
-**Supported Backends:** `openai`, `anthropic`, `deepseek`, `gemini`, `vllm`, `ollama`
+## 🛠 Configuration
 
+Edit `config.yaml` to customize checks:
+
+```yaml
+bibliography:
+  check_metadata: true        # Validate against online databases (takes time)
+  check_usage: true           # Find unused/missing entries
+  check_duplicates: true      # Detect duplicate entries
+  check_preprint_ratio: true  # Warn if >50% are preprints
+  check_relevance: false      # LLM-based relevance check (requires API key)
+
+submission:
+  # Format checks
+  caption: true               # Table/figure caption placement
+  reference: true             # Cross-reference integrity
+  formatting: true            # Citation spacing, blank lines
+  equation: true              # Equation punctuation, numbering
+  
+  # Writing quality
+  sentence: true              # Weak starters, hedging language
+  consistency: true           # Spelling, hyphenation, terminology
+  acronym: true               # Acronym definitions (3+ letters)
+  
+  # Submission compliance
+  ai_artifacts: true          # AI-generated text detection
+  anonymization: true         # Double-blind compliance
+  citation_quality: true      # Old citations (>30 years)
+  number: true                # Percentage formatting
+```
+
+## 🤖 LLM-Based Relevance Check
+
+To verify citations match their context using AI:
+
+```yaml
+bibliography:
+  check_relevance: true
+
+llm:
+  backend: "gemini"  # Options: gemini, openai, anthropic, deepseek, ollama, vllm
+  api_key: ""        # Or use environment variable (e.g., GEMINI_API_KEY)
+```
+
+**Supported Backends:**
+- **Gemini** (Google): `GEMINI_API_KEY`
+- **OpenAI**: `OPENAI_API_KEY`
+- **Anthropic**: `ANTHROPIC_API_KEY`
+- **DeepSeek**: `DEEPSEEK_API_KEY` (recommended for cost/performance)
+- **Ollama**: Local models (no API key needed)
+- **vLLM**: Custom endpoint
+
+Then run:
 ```bash
-# Using DeepSeek (Recommended for cost/performance)
-export DEEPSEEK_API_KEY="your-key-here"
-python main.py --bib paper.bib --tex paper.tex --check-relevance --llm deepseek
+python main.py
 ```
 
-### 3. Review & Clean
-BibGuard focuses on **reporting**. Run the usage check to see what's missing or unused:
+## 📝 Understanding Reports
 
-```bash
-python main.py --bib paper.bib --tex paper.tex --check-usage
-```
+### Bibliography Report
+Shows for each entry:
+- ✅ **Verified**: Metadata matches online databases
+- ⚠️ **Issues**: Mismatches, missing entries, duplicates
+- 📊 **Statistics**: Usage, duplicates, preprint ratio
 
-Review the generated report carefully. If you decide to clean up your bibliography, you can use the generated `paper_only_used_entry.bib` as a reference or a starting point, but always verify the changes manually.
+### LaTeX Quality Report
+Organized by severity:
+- 🔴 **Errors**: Critical issues (e.g., undefined references)
+- 🟡 **Warnings**: Important issues (e.g., inconsistent spelling)
+- 🔵 **Suggestions**: Style improvements (e.g., weak sentence starters)
 
-## 📝 Output Report
-
-BibGuard produces a detailed **Markdown report** (`report.md`) containing:
--   **⚠️ Critical Issues (Prioritized)**: Missing entries, duplicates, and metadata mismatches are shown first.
--   **Hallucination Alerts**: Entries that couldn't be found online.
--   **Relevance Scores**: Detailed breakdown of why a citation might be irrelevant, with context.
--   **Metadata Fixes**: Discrepancies between your BibTeX and official records.
--   **Cleanliness Stats**: Unused and missing citations.
+### Line-by-Line Report
+All LaTeX issues sorted by line number for easy fixing.
 
 ## 🧐 Understanding Mismatches
 
-BibGuard is strict, but false positives happen. Here are common scenarios where you might see a "Mismatch" warning that is actually safe to ignore:
+BibGuard is strict, but false positives happen:
 
 1.  **Year Discrepancy (±1 Year)**:
-    *   *Scenario*: Your bib says `2023`, but the fetched metadata says `2024`.
-    *   *Reason*: Often caused by the delay between a preprint (arXiv) and the official conference/journal publication.
-    *   *Action*: Verify which version you intend to cite.
+    - *Reason*: Delay between preprint (arXiv) and official publication
+    - *Action*: Verify which version you intend to cite
 
 2.  **Author List Variations**:
-    *   *Scenario*: "Author mismatch" with low similarity.
-    *   *Reason*: Different databases handle large author lists differently (e.g., truncating with `et al.` vs. listing all authors).
-    *   *Action*: Check if the primary authors match.
+    - *Reason*: Different databases handle large author lists differently
+    - *Action*: Check if primary authors match
 
-3.  **Non-Academic Sources (Blogs/Websites)**:
-    *   *Scenario*: "Confidence: Low" or "Unable to fetch metadata".
-    *   *Reason*: Blogs, software documentation, and websites are often not indexed by academic databases like Semantic Scholar or DBLP.
-    *   *Action*: Manually verify the URL and title.
+3.  **Venue Name Differences**:
+    - *Reason*: Abbreviations vs. full names (e.g., "NeurIPS" vs. "Neural Information Processing Systems")
+    - *Action*: Both are usually correct
+
+4.  **Non-Academic Sources**:
+    - *Reason*: Blogs, documentation not indexed by academic databases
+    - *Action*: Manually verify URL and title
+
+## 🔧 Advanced Options
+
+```bash
+python main.py --help              # Show all options
+python main.py --list-templates    # List conference templates
+python main.py --config my.yaml    # Use custom config file
+```
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or pull request.
+
+## 🙏 Acknowledgments
+
+BibGuard uses multiple data sources:
+- arXiv API
+- CrossRef API
+- Semantic Scholar API
+- DBLP API
+- OpenAlex API
+- Google Scholar (via scholarly)
+
+---
+
+**Made with ❤️ for researchers who care about their submission**

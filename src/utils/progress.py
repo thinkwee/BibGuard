@@ -141,16 +141,62 @@ class ProgressDisplay:
         """Print an info message."""
         self.console.print(f"  [blue]ℹ[/blue] {message}")
     
-    def print_summary(self):
-        """Print final summary."""
+    def print_detailed_summary(self, bib_stats: dict, latex_stats: dict, output_dir: str):
+        """Print a beautiful detailed summary table (Issues only)."""
         self.console.print()
-        summary = Table(title="Summary", show_header=False, border_style="blue")
-        summary.add_column("Metric", style="dim")
-        summary.add_column("Count", justify="right")
         
-        summary.add_row("Total Processed", str(self.stats.processed))
-        summary.add_row("[green]Success[/green]", f"[green]{self.stats.success}[/green]")
-        summary.add_row("[yellow]Warnings[/yellow]", f"[yellow]{self.stats.warnings}[/yellow]")
-        summary.add_row("[red]Errors[/red]", f"[red]{self.stats.errors}[/red]")
+        # Create Bibliography Issues Table
+        bib_table = Table(show_header=True, header_style="bold cyan", box=None, padding=(0, 1))
+        bib_table.add_column("📚 Bibliography Issues", style="white")
+        bib_table.add_column("Count", justify="right", style="bold red")
         
-        self.console.print(summary)
+        for label, value in bib_stats.items():
+            bib_table.add_row(label, str(value))
+            
+        # Create LaTeX Issues Table - Fine-grained Breakdown
+        latex_table = Table(show_header=True, header_style="bold magenta", box=None, padding=(0, 1))
+        latex_table.add_column("📋 LaTeX Quality Issues (Fine-grained)", style="white")
+        latex_table.add_column("Count", justify="right", style="bold yellow")
+        
+        if not latex_stats:
+            latex_table.add_row("[green]No issues found[/green]", "0")
+        else:
+            # Sort by count descending
+            for category, count in sorted(latex_stats.items(), key=lambda x: x[1], reverse=True):
+                latex_table.add_row(category, str(count))
+            
+        # Combine into a single panel
+        from rich.columns import Columns
+        
+        # If no bib issues, only show latex table
+        content = []
+        if bib_stats:
+            content.append(bib_table)
+        content.append(latex_table)
+        
+        summary_panel = Panel(
+            Columns(content, expand=True),
+            title="[bold red]⚠️ Issue Summary (Action Required)[/bold red]",
+            border_style="red",
+            padding=(1, 2)
+        )
+        
+        self.console.print(summary_panel)
+        
+        # File meaning guide
+        guide_table = Table(show_header=True, header_style="bold green", box=None, padding=(0, 2))
+        guide_table.add_column("File Name", style="cyan")
+        guide_table.add_column("Description", style="dim")
+        
+        guide_table.add_row("bibliography_report.md", "Detailed metadata and usage issues for each bib entry")
+        guide_table.add_row("latex_quality_report.md", "Summary of all LaTeX writing and formatting issues")
+        guide_table.add_row("line_by_line_report.md", "All LaTeX issues sorted by line number for easy fixing")
+        guide_table.add_row("*_only_used.bib", "A cleaned version of your bib file containing only cited entries")
+        
+        self.console.print(Panel(
+            guide_table,
+            title="[bold green]Output Directory Guide[/bold green]",
+            subtitle=f"Location: [blue underline]{output_dir}[/blue underline]",
+            border_style="green",
+            padding=(1, 1)
+        ))
