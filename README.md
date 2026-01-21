@@ -33,7 +33,7 @@ AI coding assistants and writing tools often hallucinate plausible-sounding but 
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/yourusername/bibguard.git
+git clone git@github.com:thinkwee/BibGuard.git
 cd bibguard
 pip install -r requirements.txt
 ```
