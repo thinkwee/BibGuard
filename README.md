@@ -2,6 +2,10 @@
 
 - **🎉 BibGuard is now available with a online gradio demo [https://huggingface.co/spaces/thinkwee/BibGuard](https://huggingface.co/spaces/thinkwee/BibGuard)! Try it out! 🎉**
 
+<div align="center">
+  <img src="gradio.png" alt="BibGuard demo" width="800">
+</div>
+
 **BibGuard** is your comprehensive quality assurance tool for academic papers. It validates bibliography entries against real-world databases and checks LaTeX submission quality to catch errors before you submit.
 
 AI coding assistants and writing tools often hallucinate plausible-sounding but non-existent references. **BibGuard** verifies the existence of every entry against multiple databases (arXiv, CrossRef, DBLP, Semantic Scholar, OpenAlex, Google Scholar) and uses advanced LLMs to ensure cited papers actually support your claims.
