@@ -23,7 +23,7 @@ class AcronymChecker(BaseChecker):
     # Enhanced pattern to find defined acronyms with LaTeX formatting support
     # Matches: "Full Name (ACRONYM)", "(ACRONYM; Full Name)", "Full Name (\textbf{ACRONYM})", etc.
     DEFINITION_PATTERN = re.compile(
-        r'([A-Z][a-zA-Z\s\-]+)\s*\((?:\\(?:textbf|emph|textit|texttt)\{)?([A-Z]{3,}s?)(?:\})?\)|'  # Full Name (ABC) or Full Name (\textbf{ABC})
+        r'([A-Z][a-zA-Z\s\-]+)[\s~]*\((?:\\(?:textbf|emph|textit|texttt)\{)?([A-Z]{3,}s?)(?:\})?\)|'  # Full Name (ABC) or Full Name (\textbf{ABC}) with optional ~
         r'\((?:\\(?:textbf|emph|textit|texttt)\{)?([A-Z]{3,}s?)(?:\})?;\s*([A-Za-z\s\-]+)\)',  # (ABC; Full Name) or (\textbf{ABC}; Full Name)
         re.MULTILINE
     )
@@ -116,6 +116,15 @@ class AcronymChecker(BaseChecker):
                 line_num = self._find_line_number(content, first_pos)
                 full_form = acronym_full_forms[acronym]
                 
+                # Check if full form is present in the same line (loose definition check)
+                # This handles cases like: "The Unified Modeling Language (UML) is..." where regex missed it
+                # or "UML (Unified Modeling Language)" or just "Unified Modeling Language ... UML"
+                line_content = self._get_line_content(content, line_num)
+                
+                # Check if full form is in line content (ignoring case)
+                if full_form.lower() in line_content.lower():
+                    continue
+                
                 results.append(self._create_result(
                     passed=False,
                     severity=CheckSeverity.WARNING,
@@ -126,9 +135,27 @@ class AcronymChecker(BaseChecker):
             else:
                 # Check if used before definition
                 def_pos = defined_acronyms[acronym]
+                
+                # Get the line number of the definition
+                def_line_num = self._find_line_number(content, def_pos)
+                
                 for pos in positions:
                     if pos < def_pos:
                         line_num = self._find_line_number(content, pos)
+                        
+                        # Special case: if usage is on the same line as definition, it might be the definition itself
+                        # (e.g. if the regex matched slightly later than the acronym usage starts?)
+                        # But typically DEFINITION_PATTERN captures the whole block.
+                        # However, if we have "The Unified Modeling Language (UML)..." and usage finds "UML" 
+                        # technically "UML" inside "(UML)" is usage?
+                        # `_find_all_usages` excludes special contexts like `(ACRONYM)`.
+                        # So if we are here, it's a usage outside of parens.
+                        
+                        # If usage is on the same line as definition, let's look closer.
+                        if line_num == def_line_num:
+                            # It's likely fine if on same line
+                            continue
+                            
                         results.append(self._create_result(
                             passed=False,
                             severity=CheckSeverity.WARNING,

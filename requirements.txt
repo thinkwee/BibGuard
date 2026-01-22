@@ -1,6 +1,8 @@
+gradio>=4.0.0
 bibtexparser>=1.4.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 rich>=13.7.0
 Unidecode>=1.3.0
 lxml>=5.0.0
+PyYAML>=6.0
