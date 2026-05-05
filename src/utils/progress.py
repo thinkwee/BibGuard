@@ -188,9 +188,10 @@ class ProgressDisplay:
         guide_table.add_column("File Name", style="cyan")
         guide_table.add_column("Description", style="dim")
         
+        guide_table.add_row("report.html", "Self-contained interactive HTML — opens offline, dark-mode aware")
         guide_table.add_row("bibliography_report.md", "Detailed metadata and usage issues for each bib entry")
-        guide_table.add_row("latex_quality_report.md", "Summary of all LaTeX writing and formatting issues")
-        guide_table.add_row("line_by_line_report.md", "All LaTeX issues sorted by line number for easy fixing")
+        guide_table.add_row("latex_quality_report.md", "All LaTeX writing/formatting issues, grouped by severity")
+        guide_table.add_row("report.json", "Machine-readable dump (only when 'json' is in output.formats)")
         guide_table.add_row("*_only_used.bib", "A cleaned version of your bib file containing only cited entries")
         
         self.console.print(Panel(

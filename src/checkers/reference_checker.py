@@ -31,6 +31,7 @@ class ReferenceChecker(BaseChecker):
         re.compile(r'\\eqref\{([^}]+)\}'),
         re.compile(r'\\pageref\{([^}]+)\}'),
         re.compile(r'\\nameref\{([^}]+)\}'),
+        re.compile(r'\\Sref\{([^}]+)\}'),
     ]
     
     # Appendix detection
@@ -143,7 +144,7 @@ class ReferenceChecker(BaseChecker):
         if label_type == 'equation':
             return CheckSeverity.INFO
         
-        return CheckSeverity.INFO
+        return CheckSeverity.WARNING
     
     def _check_appendix_references(
         self, 

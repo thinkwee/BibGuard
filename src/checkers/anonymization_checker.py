@@ -79,7 +79,7 @@ class AnonymizationChecker(BaseChecker):
                             severity=CheckSeverity.WARNING,
                             message=f"{desc} in comment (could be revealed when compiling)",
                             line_number=line_num,
-                            line_content=line.strip()[:100],
+                            line_content=line.strip(),
                             suggestion="Remove or anonymize URL even in comments"
                         ))
                 continue
@@ -91,7 +91,7 @@ class AnonymizationChecker(BaseChecker):
                         severity=CheckSeverity.ERROR,
                         message=f"{desc} may reveal author identity",
                         line_number=line_num,
-                        line_content=line.strip()[:100],
+                        line_content=line.strip(),
                         suggestion="Replace with anonymized URL or remove for review"
                     ))
         
@@ -112,7 +112,7 @@ class AnonymizationChecker(BaseChecker):
                         severity=CheckSeverity.WARNING,
                         message="Potentially self-revealing citation pattern",
                         line_number=line_num,
-                        line_content=line.strip()[:100],
+                        line_content=line.strip(),
                         suggestion="Rephrase to avoid revealing authorship (e.g., 'Prior work shows...')"
                     ))
         

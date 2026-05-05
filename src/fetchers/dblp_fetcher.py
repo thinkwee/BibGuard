@@ -4,6 +4,10 @@ import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 
+from src.utils.http import get_session, is_open, record_failure, record_success
+
+_SOURCE = "dblp"
+
 @dataclass
 class DBLPResult:
     title: str
@@ -32,41 +36,67 @@ class DBLPFetcher:
         self.last_request_time = time.time()
 
     def search_by_title(self, title: str) -> Optional[DBLPResult]:
-        """
-        Search DBLP by title.
-        
-        Args:
-            title: Paper title to search for
-            
-        Returns:
-            DBLPResult if found, None otherwise
-        """
+        """Top-1 result. See `search_by_title_multi` for the candidate list."""
+        results = self.search_by_title_multi(title, max_results=5)
+        return results[0] if results else None
+
+    def search_by_title_multi(self, title: str, max_results: int = 5) -> List[DBLPResult]:
+        """Return up to `max_results` DBLP hits. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return []
         self._wait_for_rate_limit()
-        
-        params = {
-            "q": title,
-            "format": "json",
-            "h": 3  # Limit to top 3 hits
-        }
-        
+
+        params = {"q": title, "format": "json", "h": max_results}
+
         try:
-            response = requests.get(self.BASE_URL, params=params, timeout=10)
-            
+            response = get_session().get(self.BASE_URL, params=params, timeout=8)
+
             if response.status_code == 429:
-                self.logger.warning("DBLP rate limit exceeded. Waiting longer...")
-                time.sleep(5)
-                return None
-                
+                self.logger.warning("DBLP rate limit exceeded; tripping breaker")
+                record_failure(_SOURCE, threshold=2)  # DBLP 429 is sticky
+                return []
+
             if response.status_code != 200:
-                self.logger.warning(f"DBLP API error: {response.status_code}")
-                return None
-                
+                self.logger.debug("DBLP API status %s for title=%r", response.status_code, title[:60])
+                record_failure(_SOURCE)
+                return []
+
             data = response.json()
-            return self._parse_response(data, title)
-            
+            record_success(_SOURCE)
+            return self._parse_response_multi(data)
+
         except Exception as e:
-            self.logger.error(f"Error fetching from DBLP: {e}")
-            return None
+            self.logger.debug("Error fetching from DBLP for title=%r: %s", title[:60], e, exc_info=True)
+            record_failure(_SOURCE)
+            return []
+
+    def _parse_response_multi(self, data: Dict[str, Any]) -> List[DBLPResult]:
+        out: List[DBLPResult] = []
+        try:
+            hits = data.get("result", {}).get("hits", {}).get("hit", []) or []
+            for hit in hits:
+                info = hit.get("info", {}) or {}
+                authors_data = info.get("authors", {}).get("author", [])
+                authors: List[str] = []
+                if isinstance(authors_data, list):
+                    authors = [a.get("text", "") for a in authors_data if isinstance(a, dict)]
+                elif isinstance(authors_data, dict):
+                    authors = [authors_data.get("text", "")]
+                title = info.get("title", "") or ""
+                if title.endswith("."):
+                    title = title[:-1]
+                doi = info.get("doi", "")
+                out.append(DBLPResult(
+                    title=title,
+                    authors=[a for a in authors if a],
+                    year=info.get("year", ""),
+                    venue=info.get("venue", ""),
+                    url=info.get("url", ""),
+                    doi=doi if doi else None,
+                ))
+        except Exception as e:
+            self.logger.error("DBLP parse failed: %s", e, exc_info=True)
+        return out
 
     def _parse_response(self, data: Dict[str, Any], query_title: str) -> Optional[DBLPResult]:
         """Parse DBLP JSON response."""
@@ -117,5 +147,5 @@ class DBLPFetcher:
             )
             
         except Exception as e:
-            self.logger.error(f"Error parsing DBLP response: {e}")
+            self.logger.error("Error parsing DBLP response: %s", e, exc_info=True)
             return None

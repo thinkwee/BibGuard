@@ -4,10 +4,16 @@ CrossRef API fetcher for bibliography metadata.
 CrossRef provides free, reliable access to metadata for academic publications.
 No API key required, no rate limiting for reasonable use.
 """
+import logging
 import requests
 from dataclasses import dataclass
 from typing import Optional, List
 import time
+
+from src.utils.http import get_session, is_open, record_failure, record_success
+
+logger = logging.getLogger(__name__)
+_SOURCE = "crossref"
 
 
 @dataclass
@@ -34,107 +40,99 @@ class CrossRefFetcher:
     BASE_URL = "https://api.crossref.org/works"
     RATE_LIMIT_DELAY = 1.0  # Be polite
     
-    def __init__(self, mailto: str = "bibguard@example.com"):
+    def __init__(self, mailto: Optional[str] = None):
         """
         Initialize CrossRef fetcher.
-        
-        Args:
-            mailto: Email for polite pool (gets better rate limits)
+
+        The shared HTTP session already carries a polite-pool User-Agent built
+        from `network.contact_email`. `mailto` here is kept for backward
+        compatibility but no longer overrides the session header.
         """
         self.mailto = mailto
         self._last_request_time = 0.0
-        self._session = requests.Session()
-    
+
     def _rate_limit(self):
         """Ensure rate limiting between requests."""
         elapsed = time.time() - self._last_request_time
         if elapsed < self.RATE_LIMIT_DELAY:
             time.sleep(self.RATE_LIMIT_DELAY - elapsed)
         self._last_request_time = time.time()
-    
+
     def _get_headers(self) -> dict:
-        """Get request headers with mailto for polite pool."""
-        return {
-            'User-Agent': f'BibGuard/1.0 (mailto:{self.mailto})',
-            'Accept': 'application/json',
-        }
+        return {'Accept': 'application/json'}
     
     def search_by_title(self, title: str, max_results: int = 5) -> Optional[CrossRefResult]:
-        """
-        Search for a paper by title.
-        
-        Args:
-            title: Paper title to search for
-            max_results: Maximum number of results to retrieve
-            
-        Returns:
-            Best matching CrossRefResult or None if not found
-        """
+        """Top-1 result. See `search_by_title_multi` for the candidate list."""
+        results = self.search_by_title_multi(title, max_results=max_results)
+        return results[0] if results else None
+
+    def search_by_title_multi(self, title: str, max_results: int = 5) -> List[CrossRefResult]:
+        """Return up to `max_results` candidates so callers can pick the best match."""
+        if is_open(_SOURCE):
+            return []
         self._rate_limit()
-        
+
         params = {
             'query.title': title,
             'rows': max_results,
             'select': 'title,author,published-print,published-online,DOI,publisher,container-title,abstract'
         }
-        
+
         try:
-            response = self._session.get(
+            response = get_session().get(
                 self.BASE_URL,
                 params=params,
                 headers=self._get_headers(),
-                timeout=30
+                timeout=(5, 8),
             )
             response.raise_for_status()
-            
+
             data = response.json()
-            
             if data.get('status') != 'ok':
-                return None
-            
-            items = data.get('message', {}).get('items', [])
-            
-            if not items:
-                return None
-            
-            # Return best match (first result, as CrossRef ranks by relevance)
-            return self._parse_item(items[0])
-            
-        except requests.RequestException:
-            return None
+                return []
+
+            items = data.get('message', {}).get('items', []) or []
+            out: List[CrossRefResult] = []
+            for it in items:
+                parsed = self._parse_item(it)
+                if parsed:
+                    out.append(parsed)
+            record_success(_SOURCE)
+            return out
+
+        except requests.RequestException as e:
+            logger.debug("CrossRef search_by_title(%s) failed: %s", title[:60], e, exc_info=True)
+            record_failure(_SOURCE)
+            return []
     
     def search_by_doi(self, doi: str) -> Optional[CrossRefResult]:
-        """
-        Fetch metadata by DOI.
-        
-        Args:
-            doi: DOI of the paper
-            
-        Returns:
-            CrossRefResult or None if not found
-        """
+        """Fetch metadata by DOI. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return None
         self._rate_limit()
-        
-        # Clean DOI (remove https://doi.org/ prefix if present)
+
         doi = doi.replace('https://doi.org/', '').replace('http://doi.org/', '')
-        
+
         try:
-            response = self._session.get(
+            response = get_session().get(
                 f"{self.BASE_URL}/{doi}",
                 headers=self._get_headers(),
-                timeout=30
+                timeout=(5, 8),
             )
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             if data.get('status') != 'ok':
                 return None
-            
+
             item = data.get('message', {})
+            record_success(_SOURCE)
             return self._parse_item(item)
-            
-        except requests.RequestException:
+
+        except requests.RequestException as e:
+            logger.debug("CrossRef search_by_doi(%s) failed: %s", doi, e, exc_info=True)
+            record_failure(_SOURCE)
             return None
     
     def _parse_item(self, item: dict) -> Optional[CrossRefResult]:

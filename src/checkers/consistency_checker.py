@@ -149,25 +149,45 @@ class ConsistencyChecker(BaseChecker):
     ]
     
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
+        config = config or {}
         results = []
-        
+
         # Remove comments
         content = re.sub(r'(?<!\\)%.*$', '', tex_content, flags=re.MULTILINE)
         content_lower = content.lower()
-        
+
+        # Merge user glossary preferred terms into the variant table
+        glossary_preferred = list(config.get('glossary_preferred', []))
+        merged_variants = dict(self.KNOWN_VARIANTS)
+        for term in glossary_preferred:
+            term = (term or "").strip()
+            if not term:
+                continue
+            # Generate plausible variants: hyphen ↔ space ↔ collapsed; lower vs canonical
+            forms = {term}
+            if "-" in term:
+                forms.add(term.replace("-", " "))
+                forms.add(term.replace("-", ""))
+            if " " in term:
+                forms.add(term.replace(" ", "-"))
+                forms.add(term.replace(" ", ""))
+            forms.discard(term)
+            if forms:
+                merged_variants.setdefault(term, []).extend(sorted(forms))
+
         # Check for known variant inconsistencies
-        for canonical, variants in self.KNOWN_VARIANTS.items():
+        for canonical, variants in merged_variants.items():
             found_forms = []
-            
+
             # Check canonical form
             if re.search(rf'\b{re.escape(canonical)}\b', content, re.IGNORECASE):
                 found_forms.append(canonical)
-            
+
             # Check variants
             for variant in variants:
                 if re.search(rf'\b{re.escape(variant)}\b', content, re.IGNORECASE):
                     found_forms.append(variant)
-            
+
             if len(found_forms) > 1:
                 results.append(self._create_result(
                     passed=False,

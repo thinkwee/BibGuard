@@ -1,6 +1,7 @@
 """
 arXiv metadata fetcher using the public API.
 """
+import logging
 import re
 import time
 import xml.etree.ElementTree as ET
@@ -9,6 +10,11 @@ from typing import Optional
 from urllib.parse import quote
 
 import requests
+
+from src.utils.http import get_session, is_open, record_failure, record_success
+
+logger = logging.getLogger(__name__)
+_SOURCE = "arxiv"
 
 
 @dataclass
@@ -55,60 +61,53 @@ class ArxivFetcher:
         self._last_request_time = time.time()
     
     def fetch_by_id(self, arxiv_id: str) -> Optional[ArxivMetadata]:
-        """Fetch metadata by arXiv ID."""
-        # Clean up ID
+        """Fetch metadata by arXiv ID. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return None
         arxiv_id = arxiv_id.strip()
         arxiv_id = re.sub(r'^arXiv:', '', arxiv_id, flags=re.IGNORECASE)
-        
+
         self._rate_limit()
-        
-        params = {
-            'id_list': arxiv_id,
-            'max_results': 1
-        }
-        
+
+        params = {'id_list': arxiv_id, 'max_results': 1}
+
         try:
-            response = requests.get(
-                self.API_BASE,
-                params=params,
-                timeout=30,
-                headers={'User-Agent': 'BibChecker/1.0 (mailto:user@example.com)'}
-            )
+            response = get_session().get(self.API_BASE, params=params, timeout=(5, 8))
             response.raise_for_status()
+            record_success(_SOURCE)
         except requests.RequestException as e:
+            logger.debug("arXiv fetch_by_id(%s) failed: %s", arxiv_id, e, exc_info=True)
+            record_failure(_SOURCE)
             return None
-        
+
         return self._parse_response(response.text)
     
     def search_by_title(self, title: str, max_results: int = 5) -> list[ArxivMetadata]:
-        """Search arXiv by title."""
+        """Search arXiv by title. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return []
         self._rate_limit()
-        
-        # Clean up title for search
+
         clean_title = re.sub(r'[^\w\s]', ' ', title)
         clean_title = re.sub(r'\s+', ' ', clean_title).strip()
-        
-        # Build search query
         search_query = f'ti:"{clean_title}"'
-        
+
         params = {
             'search_query': search_query,
             'max_results': max_results,
             'sortBy': 'relevance',
             'sortOrder': 'descending'
         }
-        
+
         try:
-            response = requests.get(
-                self.API_BASE,
-                params=params,
-                timeout=30,
-                headers={'User-Agent': 'BibChecker/1.0 (mailto:user@example.com)'}
-            )
+            response = get_session().get(self.API_BASE, params=params, timeout=(5, 8))
             response.raise_for_status()
+            record_success(_SOURCE)
         except requests.RequestException as e:
+            logger.debug("arXiv search_by_title(%s) failed: %s", title[:60], e, exc_info=True)
+            record_failure(_SOURCE)
             return []
-        
+
         return self._parse_response_multiple(response.text)
     
     def _parse_response(self, xml_content: str) -> Optional[ArxivMetadata]:

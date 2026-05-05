@@ -29,7 +29,10 @@ class CheckResult:
     line_content: Optional[str] = None
     suggestion: Optional[str] = None
     file_path: Optional[str] = None
-    
+    # Substring of line_content that triggered the issue. The renderer wraps
+    # this in <mark> so the user can see *where* in the line to look.
+    match_text: Optional[str] = None
+
     def to_dict(self) -> dict:
         return {
             'checker': self.checker_name,
@@ -39,7 +42,8 @@ class CheckResult:
             'line': self.line_number,
             'content': self.line_content,
             'suggestion': self.suggestion,
-            'file_path': self.file_path
+            'file_path': self.file_path,
+            'match_text': self.match_text,
         }
 
 
@@ -178,7 +182,8 @@ class BaseChecker(ABC):
         message: str,
         line_number: Optional[int] = None,
         line_content: Optional[str] = None,
-        suggestion: Optional[str] = None
+        suggestion: Optional[str] = None,
+        match_text: Optional[str] = None,
     ) -> CheckResult:
         """Helper to create a CheckResult with this checker's name."""
         return CheckResult(
@@ -188,6 +193,7 @@ class BaseChecker(ABC):
             message=message,
             line_number=line_number,
             line_content=line_content,
-            suggestion=suggestion
+            suggestion=suggestion,
+            match_text=match_text,
         )
 

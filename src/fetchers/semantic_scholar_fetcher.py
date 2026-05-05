@@ -2,11 +2,17 @@
 Semantic Scholar API fetcher.
 Official API with high quality metadata and generous rate limits.
 """
+import logging
 import time
 from dataclasses import dataclass
 from typing import Optional
 
 import requests
+
+from src.utils.http import get_session, is_open, record_failure, record_success
+
+logger = logging.getLogger(__name__)
+_SOURCE = "s2"
 
 
 @dataclass
@@ -36,17 +42,16 @@ class SemanticScholarFetcher:
     
     def __init__(self, api_key: Optional[str] = None):
         """
-        Initialize Semantic Scholar fetcher.
-        
-        Args:
-            api_key: Optional API key for higher rate limits (free from semanticscholar.org)
+        Semantic Scholar fetcher. Uses shared session; api_key is added per-call
+        as a header so the cache key includes it.
         """
         self.api_key = api_key
         self._last_request_time = 0.0
-        self._session = requests.Session()
-        
-        if api_key:
-            self._session.headers.update({'x-api-key': api_key})
+
+    def _headers(self) -> dict:
+        if self.api_key:
+            return {'x-api-key': self.api_key}
+        return {}
     
     def _rate_limit(self):
         """Ensure rate limiting between requests."""
@@ -56,95 +61,91 @@ class SemanticScholarFetcher:
         self._last_request_time = time.time()
     
     def search_by_title(self, title: str, max_results: int = 5) -> Optional[SemanticScholarResult]:
+        """Return the top-1 search result. See `search_by_title_multi` for the full list."""
+        results = self.search_by_title_multi(title, max_results=max_results)
+        return results[0] if results else None
+
+    def search_by_title_multi(self, title: str, max_results: int = 5) -> list[SemanticScholarResult]:
         """
-        Search for a paper by title.
-        
-        Args:
-            title: Paper title to search for
-            max_results: Maximum number of results to fetch (default: 5)
-            
-        Returns:
-            SemanticScholarResult if found, None otherwise
+        Return up to `max_results` candidate results so callers can pick the best match.
         """
+        if is_open(_SOURCE):
+            return []
         self._rate_limit()
-        
+
         url = f"{self.BASE_URL}/paper/search"
         params = {
             'query': title,
             'limit': max_results,
             'fields': 'title,authors,year,abstract,paperId,citationCount,url'
         }
-        
+
         try:
-            response = self._session.get(url, params=params, timeout=10)
+            response = get_session().get(url, params=params, headers=self._headers(), timeout=8)
             response.raise_for_status()
             data = response.json()
-            
+
             papers = data.get('data', [])
-            if not papers:
-                return None
-            
-            # Return the first (most relevant) result
-            return self._parse_paper(papers[0])
-            
-        except requests.RequestException:
-            return None
+            results: list[SemanticScholarResult] = []
+            for p in papers:
+                parsed = self._parse_paper(p)
+                if parsed:
+                    results.append(parsed)
+            record_success(_SOURCE)
+            return results
+
+        except requests.RequestException as e:
+            logger.debug("S2 search_by_title(%s) failed: %s", title[:60], e, exc_info=True)
+            record_failure(_SOURCE)
+            return []
     
     def fetch_by_doi(self, doi: str) -> Optional[SemanticScholarResult]:
-        """
-        Fetch paper metadata by DOI.
-        
-        Args:
-            doi: DOI of the paper
-            
-        Returns:
-            SemanticScholarResult if found, None otherwise
-        """
+        """Fetch paper metadata by DOI. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return None
         self._rate_limit()
-        
+
         url = f"{self.BASE_URL}/paper/DOI:{doi}"
         params = {
             'fields': 'title,authors,year,abstract,paperId,citationCount,url'
         }
-        
+
         try:
-            response = self._session.get(url, params=params, timeout=10)
+            response = get_session().get(url, params=params, headers=self._headers(), timeout=8)
             response.raise_for_status()
             data = response.json()
+            record_success(_SOURCE)
             return self._parse_paper(data)
-            
-        except requests.RequestException:
+
+        except requests.RequestException as e:
+            logger.debug("S2 fetch_by_doi(%s) failed: %s", doi, e, exc_info=True)
+            record_failure(_SOURCE)
             return None
-    
+
     def fetch_by_arxiv_id(self, arxiv_id: str) -> Optional[SemanticScholarResult]:
-        """
-        Fetch paper metadata by arXiv ID.
-        
-        Args:
-            arxiv_id: arXiv ID (e.g., "2301.12345" or "arXiv:2301.12345")
-            
-        Returns:
-            SemanticScholarResult if found, None otherwise
-        """
+        """Fetch paper metadata by arXiv ID. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return None
         self._rate_limit()
-        
-        # Clean arXiv ID (remove "arXiv:" prefix if present)
+
         clean_id = arxiv_id.replace('arXiv:', '')
-        
         url = f"{self.BASE_URL}/paper/ARXIV:{clean_id}"
         params = {
             'fields': 'title,authors,year,abstract,paperId,citationCount,url'
         }
-        
+
         try:
-            response = self._session.get(url, params=params, timeout=10)
+            response = get_session().get(url, params=params, headers=self._headers(), timeout=8)
             response.raise_for_status()
             data = response.json()
+            record_success(_SOURCE)
             return self._parse_paper(data)
-            
-        except requests.RequestException:
+
+        except requests.RequestException as e:
+            logger.debug("S2 fetch_by_arxiv_id(%s) failed: %s", arxiv_id, e, exc_info=True)
+            record_failure(_SOURCE)
             return None
-    
+
     def _parse_paper(self, paper_data: dict) -> Optional[SemanticScholarResult]:
         """Parse paper data from API response."""
         try:

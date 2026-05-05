@@ -2,11 +2,17 @@
 OpenAlex API fetcher.
 Free and open API for scholarly metadata.
 """
+import logging
 import time
 from dataclasses import dataclass
 from typing import Optional
 
 import requests
+
+from src.utils.http import get_session, is_open, record_failure, record_success
+
+logger = logging.getLogger(__name__)
+_SOURCE = "openalex"
 
 
 @dataclass
@@ -36,25 +42,10 @@ class OpenAlexFetcher:
     RATE_LIMIT_DELAY = 0.1  # 10 req/sec max
     
     def __init__(self, email: Optional[str] = None):
-        """
-        Initialize OpenAlex fetcher.
-        
-        Args:
-            email: Optional email for polite pool (faster rate limits)
-        """
+        """OpenAlex fetcher. Shared session UA already includes contact email."""
         self.email = email
         self._last_request_time = 0.0
-        self._session = requests.Session()
-        
-        # Set user agent (required by OpenAlex)
-        self._session.headers.update({
-            'User-Agent': 'BibGuard/1.0 (https://github.com/thinkwee/BibGuard; mailto:bibguard@example.com)'
-        })
-        
-        # Add email to polite pool if provided
-        if email:
-            self._session.headers.update({'From': email})
-    
+
     def _rate_limit(self):
         """Ensure rate limiting between requests."""
         elapsed = time.time() - self._last_request_time
@@ -63,62 +54,54 @@ class OpenAlexFetcher:
         self._last_request_time = time.time()
     
     def search_by_title(self, title: str, max_results: int = 5) -> Optional[OpenAlexResult]:
-        """
-        Search for a paper by title.
-        
-        Args:
-            title: Paper title to search for
-            max_results: Maximum number of results to fetch (default: 5)
-            
-        Returns:
-            OpenAlexResult if found, None otherwise
-        """
+        """Top-1 result. See `search_by_title_multi` for the candidate list."""
+        results = self.search_by_title_multi(title, max_results=max_results)
+        return results[0] if results else None
+
+    def search_by_title_multi(self, title: str, max_results: int = 5) -> list[OpenAlexResult]:
+        """Return up to `max_results` candidates. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return []
         self._rate_limit()
-        
+
         url = f"{self.BASE_URL}/works"
-        params = {
-            'search': title,
-            'per-page': max_results
-        }
-        
+        params = {'search': title, 'per-page': max_results}
+
         try:
-            response = self._session.get(url, params=params, timeout=10)
+            response = get_session().get(url, params=params, timeout=8)
             response.raise_for_status()
             data = response.json()
-            
-            results = data.get('results', [])
-            if not results:
-                return None
-            
-            # Return the first (most relevant) result
-            return self._parse_work(results[0])
-            
-        except requests.RequestException:
-            return None
+            out: list[OpenAlexResult] = []
+            for w in data.get('results', []) or []:
+                parsed = self._parse_work(w)
+                if parsed:
+                    out.append(parsed)
+            record_success(_SOURCE)
+            return out
+        except requests.RequestException as e:
+            logger.debug("OpenAlex search_by_title(%s) failed: %s", title[:60], e, exc_info=True)
+            record_failure(_SOURCE)
+            return []
     
     def fetch_by_doi(self, doi: str) -> Optional[OpenAlexResult]:
-        """
-        Fetch paper metadata by DOI.
-        
-        Args:
-            doi: DOI of the paper
-            
-        Returns:
-            OpenAlexResult if found, None otherwise
-        """
+        """Fetch paper metadata by DOI. Honors circuit breaker."""
+        if is_open(_SOURCE):
+            return None
         self._rate_limit()
-        
-        # OpenAlex uses DOI URLs
+
         doi_url = f"https://doi.org/{doi}"
         url = f"{self.BASE_URL}/works/{doi_url}"
-        
+
         try:
-            response = self._session.get(url, timeout=10)
+            response = get_session().get(url, timeout=8)
             response.raise_for_status()
             data = response.json()
+            record_success(_SOURCE)
             return self._parse_work(data)
-            
-        except requests.RequestException:
+
+        except requests.RequestException as e:
+            logger.debug("OpenAlex fetch_by_doi(%s) failed: %s", doi, e, exc_info=True)
+            record_failure(_SOURCE)
             return None
     
     def _parse_work(self, work_data: dict) -> Optional[OpenAlexResult]:

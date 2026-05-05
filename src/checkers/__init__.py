@@ -11,6 +11,7 @@ from .consistency_checker import ConsistencyChecker
 from .citation_quality_checker import CitationQualityChecker
 from .equation_checker import EquationChecker
 from .acronym_checker import AcronymChecker
+from .template_checker import TemplateChecker
 
 __all__ = [
     'BaseChecker',
@@ -27,6 +28,7 @@ __all__ = [
     'CitationQualityChecker',
     'EquationChecker',
     'AcronymChecker',
+    'TemplateChecker',
 ]
 
 
@@ -43,6 +45,7 @@ CHECKER_REGISTRY = {
     'citation_quality': CitationQualityChecker,
     'equation': EquationChecker,
     'acronym': AcronymChecker,
+    'template': TemplateChecker,
 }
 
 

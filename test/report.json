@@ -1,0 +1,1919 @@
+{
+  "meta": {
+    "generated_at": "2026-05-05 22:25:21",
+    "bib_files_count": 1,
+    "tex_files_count": 1,
+    "template": ""
+  },
+  "summary": {
+    "bibliography": {},
+    "latex": {
+      "Unreferenced Label": 1,
+      "Unreferenced Appendix": 1,
+      "Mixed Citation Styles": 1,
+      "Mixed Math Notation": 1,
+      "Hedging/Vague Language": 2,
+      "Spelling Inconsistency": 3,
+      "Hyphenation Inconsistency": 5,
+      "Acronym  used without definition": 6,
+      "HuggingFace profile URL may reveal author identity": 1
+    }
+  },
+  "entries": [
+    {
+      "entry": {
+        "key": "zhang2025landscapeagenticreinforcementlearning",
+        "entry_type": "misc",
+        "title": "The Landscape of Agentic Reinforcement Learning for LLMs: A Survey",
+        "author": "Guibin Zhang and Hejia Geng and Xiaohang Yu and Zhenfei Yin and Zaibin Zhang and Zelin Tan and Heng Zhou and Zhongzhi Li and Xiangyuan Xue and Yijiang Li and Yifan Zhou and Yang Chen and Chen Zhang and Yutao Fan and Zihu Wang and Songtao Huang and Francisco Piedrahita-Velez and Yue Liao and Hongru Wang and Mengyue Yang and Heng Ji and Jun Wang and Shuicheng Yan and Philip Torr and Lei Bai",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2509.02547",
+        "url": "https://arxiv.org/abs/2509.02547",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "chen-etal-2020-hybridqa",
+        "entry_type": "inproceedings",
+        "title": "HybridQA: A Dataset of Multi-Hop Question Answering over Tabular and Textual Data",
+        "author": "Chen, Wenhu  and\nZha, Hanwen  and\nChen, Zhiyu  and\nXiong, Wenhan  and\nWang, Hong  and\nWang, William Yang",
+        "year": "2020",
+        "journal": "",
+        "booktitle": "Findings of the Association for Computational Linguistics: EMNLP 2020",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "10.18653/v1/2020.findings-emnlp.91",
+        "arxiv_id": "",
+        "url": "https://aclanthology.org/2020.findings-emnlp.91/",
+        "volume": "",
+        "pages": "1026--1036"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "lai2023ds",
+        "entry_type": "misc",
+        "title": "DS-1000: a natural and reliable benchmark for data science code generation",
+        "author": "Lai, Yuhang and Li, Chengxi and Wang, Yiming and Zhang, Tianyi and Zhong, Ruiqi and Zettlemoyer, Luke and Yih, Wen-tau and Fried, Daniel and Wang, Sida and Yu, Tao",
+        "year": "2023",
+        "journal": "",
+        "booktitle": "Proceedings of the 40th International Conference on Machine Learning",
+        "publisher": "JMLR.org",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wong2025widesearchbenchmarkingagenticbroad",
+        "entry_type": "misc",
+        "title": "WideSearch: Benchmarking Agentic Broad Info-Seeking",
+        "author": "Ryan Wong and Jiawei Wang and Junjie Zhao and Li Chen and Yan Gao and Long Zhang and Xuan Zhou and Zuo Wang and Kai Xiang and Ge Zhang and Wenhao Huang and Yang Wang and Ke Wang",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.07999",
+        "url": "https://arxiv.org/abs/2508.07999",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "hollmann2023large",
+        "entry_type": "article",
+        "title": "Large language models for automated data science: Introducing caafe for context-aware automated feature engineering",
+        "author": "Hollmann, Noah and Müller, Samuel and Hutter, Frank",
+        "year": "2023",
+        "journal": "Advances in Neural Information Processing Systems",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "36",
+        "pages": "44753--44775"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wen2025aiserviceproactiveassistance",
+        "entry_type": "misc",
+        "title": "AI for Service: Proactive Assistance with AI Glasses",
+        "author": "Zichen Wen and Yiyu Wang and Chenfei Liao and Boxue Yang and Junxian Li and Weifeng Liu and Haocong He and Bolong Feng and Xuyang Liu and Yuanhuiyi Lyu and Xu Zheng and Xuming Hu and Linfeng Zhang",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2510.14359",
+        "url": "https://arxiv.org/abs/2510.14359",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "nan2022fetaqa",
+        "entry_type": "article",
+        "title": "FeTaQA: Free-form Table Question Answering",
+        "author": "Nan, Linyong  and\nHsieh, Chiachun  and\nMao, Ziming  and\nLin, Xi Victoria  and\nVerma, Neha  and\nZhang, Rui  and\nKryści\\ŉski, Wojciech  and\nSchoelkopf, Hailey  and\nKong, Riley  and\nTang, Xiangru  and\nMutuma, Mutethia  and\nRosand, Ben  and\nTrindade, Isabel  and\nBandaru, Renusree  and\nCunningham, Jacob  and\nXiong, Caiming  and\nRadev, Dragomir",
+        "year": "2022",
+        "journal": "Transactions of the Association for Computational Linguistics",
+        "booktitle": "",
+        "publisher": "MIT Press",
+        "doi": "10.1162/tacl_a_00446",
+        "arxiv_id": "",
+        "url": "https://aclanthology.org/2022.tacl-1.3/",
+        "volume": "10",
+        "pages": "35--49"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "chen2025largelanguagemodelbaseddata",
+        "entry_type": "misc",
+        "title": "Large Language Model-based Data Science Agent: A Survey",
+        "author": "Ke Chen and Peiran Wang and Yaoning Yu and Xianyang Zhan and Haohan Wang",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.02744",
+        "url": "https://arxiv.org/abs/2508.02744",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "pasupat-liang-2015-compositional",
+        "entry_type": "inproceedings",
+        "title": "Compositional Semantic Parsing on Semi-Structured Tables",
+        "author": "Pasupat, Panupong  and\nLiang, Percy",
+        "year": "2015",
+        "journal": "",
+        "booktitle": "Proceedings of the 53rd Annual Meeting of the Association for Computational Linguistics and the 7th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "10.3115/v1/P15-1142",
+        "arxiv_id": "",
+        "url": "https://aclanthology.org/P15-1142/",
+        "volume": "",
+        "pages": "1470--1480"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "xue2024dbgptempoweringdatabaseinteractions",
+        "entry_type": "misc",
+        "title": "DB-GPT: Empowering Database Interactions with Private Large Language\nModels",
+        "author": "Siqiao Xue and\nCaigao Jiang and\nWenhui Shi and\nFangyin Cheng and\nKeting Chen and\nHongjun Yang and\nZhiping Zhang and\nJianshan He and\nHongyang Zhang and\nGanglin Wei and\nWang Zhao and\nFan Zhou and\nDanrui Qi and\nHong Yi and\nShaodong Liu and\nFaqiang Chen",
+        "year": "2023",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2312.17449",
+        "arxiv_id": "2312.17449",
+        "url": "https://doi.org/10.48550/arXiv.2312.17449",
+        "volume": "abs/2312.17449",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "dsagent",
+        "entry_type": "misc",
+        "title": "DS-Agent: Automated Data Science by Empowering Large Language Models with Case-Based Reasoning",
+        "author": "Siyuan Guo and Cheng Deng and Ying Wen and Hechang Chen and Yi Chang and Jun Wang",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2402.17453",
+        "url": "https://arxiv.org/abs/2402.17453",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yao2023react",
+        "entry_type": "inproceedings",
+        "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+        "author": "Shunyu Yao and\nJeffrey Zhao and\nDian Yu and\nNan Du and\nIzhak Shafran and\nKarthik R. Narasimhan and\nYuan Cao",
+        "year": "2023",
+        "journal": "",
+        "booktitle": "The Eleventh International Conference on Learning Representations,\nICLR 2023, Kigali, Rwanda, May 1-5, 2023",
+        "publisher": "OpenReview.net",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://openreview.net/forum?id=WE_vluYUL-X",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 3
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "sundar2025i2istradainformationinsights",
+        "entry_type": "misc",
+        "title": "I2I-STRADA -- Information to Insights via Structured Reasoning Agent for Data Analysis",
+        "author": "SaiBarath Sundar and Pranav Satheesan and Udayaadithya Avadhanam",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2507.17874",
+        "url": "https://arxiv.org/abs/2507.17874",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhou2025surveyllmtimesdata",
+        "entry_type": "misc",
+        "title": "A Survey of LLM $\\times$ DATA",
+        "author": "Xuanhe Zhou and Junxuan He and Wei Zhou and Haodong Chen and Zirui Tang and Haoyu Zhao and Xin Tong and Guoliang Li and Youmin Chen and Jun Zhou and Zhaojun Sun and Binyuan Hui and Shuo Wang and Conghui He and Zhiyuan Liu and Jingren Zhou and Fan Wu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2505.18458",
+        "url": "https://arxiv.org/abs/2505.18458",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhang2025deepresearchsurveyautonomous",
+        "entry_type": "misc",
+        "title": "Deep Research: A Survey of Autonomous Research Agents",
+        "author": "Wenlin Zhang and Xiaopeng Li and Yingyi Zhang and Pengyue Jia and Yichao Wang and Huifeng Guo and Yong Liu and Xiangyu Zhao",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.12752",
+        "url": "https://arxiv.org/abs/2508.12752",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wang2025odysseybenchevaluatingllmagents",
+        "entry_type": "article",
+        "title": "Odysseybench: Evaluating llm agents on long-horizon complex office application workflows",
+        "author": "Wang, Weixuan and Han, Dongge and Diaz, Daniel Madrigal and Xu, Jin and Rühle, Victor and Rajmohan, Saravan",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2508.09124",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.09124",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "MatPlotAgent2024ACL",
+        "entry_type": "inproceedings",
+        "title": "MatPlotAgent: Method and Evaluation for LLM-Based Agentic Scientific Data Visualization",
+        "author": "Zhiyu Yang and\nZihan Zhou and\nShuo Wang and\nXin Cong and\nXu Han and\nYukun Yan and\nZhenghao Liu and\nZhixing Tan and\nPengyuan Liu and\nDong Yu and\nZhiyuan Liu and\nXiaodong Shi and\nMaosong Sun",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "Findings of the Association for Computational Linguistics, ACL 2024,\nBangkok, Thailand and virtual meeting, August 11-16, 2024",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "10.18653/V1/2024.FINDINGS-ACL.701",
+        "arxiv_id": "",
+        "url": "https://doi.org/10.18653/v1/2024.findings-acl.701",
+        "volume": "",
+        "pages": "11789--11804"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yang2025fingertip20kbenchmarkproactive",
+        "entry_type": "misc",
+        "title": "FingerTip 20K: A Benchmark for Proactive and Personalized Mobile LLM Agents",
+        "author": "Qinglong Yang and Haoming Li and Haotian Zhao and Xiaokai Yan and Jingtao Ding and Fengli Xu and Yong Li",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2507.21071",
+        "url": "https://arxiv.org/abs/2507.21071",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "nascimento2024llm4dsevaluatinglargelanguage",
+        "entry_type": "misc",
+        "title": "LLM4DS: Evaluating Large Language Models for Data Science Code Generation",
+        "author": "Nathalia Nascimento and Everton Guimaraes and Sai Sanjna Chintakunta and Santhosh Anitha Boominathan",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2411.11908",
+        "url": "https://arxiv.org/abs/2411.11908",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yehudai2025surveyevaluationllmbasedagents",
+        "entry_type": "article",
+        "title": "Survey on Evaluation of LLM-based Agents",
+        "author": "Asaf Yehudai and\nLilach Eden and\nAlan Li and\nGuy Uziel and\nYilun Zhao and\nRoy Bar-Haim and\nArman Cohan and\nMichal Shmueli-Scheuer",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2503.16416",
+        "arxiv_id": "2503.16416",
+        "url": "https://doi.org/10.48550/arXiv.2503.16416",
+        "volume": "abs/2503.16416",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yao2025rigorousbenchmarkmultidimensionalevaluation",
+        "entry_type": "misc",
+        "title": "A Rigorous Benchmark with Multidimensional Evaluation for Deep Research Agents: From Answers to Reports",
+        "author": "Yang Yao and Yixu Wang and Yuxuan Zhang and Yi Lu and Tianle Gu and Lingyu Li and Dingyi Zhao and Keming Wu and Haozhe Wang and Ping Nie and Yan Teng and Yingchun Wang",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2510.02190",
+        "url": "https://arxiv.org/abs/2510.02190",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wang2025aiagenticprogrammingsurvey",
+        "entry_type": "misc",
+        "title": "AI Agentic Programming: A Survey of Techniques, Challenges, and Opportunities",
+        "author": "Huanting Wang and Jingzhi Gong and Huawei Zhang and Jie Xu and Zheng Wang",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.11126",
+        "url": "https://arxiv.org/abs/2508.11126",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "dai2025cdecuriositydrivenexplorationefficient",
+        "entry_type": "article",
+        "title": "CDE: Curiosity-Driven Exploration for Efficient Reinforcement Learning in Large Language Models",
+        "author": "Runpeng Dai and\nLinfeng Song and\nHaolin Liu and\nZhenwen Liang and\nDian Yu and\nHaitao Mi and\nZhaopeng Tu and\nRui Liu and\nTong Zheng and\nHongtu Zhu and\nDong Yu",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2509.09675",
+        "arxiv_id": "2509.09675",
+        "url": "https://doi.org/10.48550/arXiv.2509.09675",
+        "volume": "abs/2509.09675",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "lu2025large",
+        "entry_type": "article",
+        "title": "Large language model for table processing: a survey",
+        "author": "Weizheng Lu and\nJing Zhang and\nJu Fan and\nZihao Fu and\nYueguo Chen and\nXiaoyong Du",
+        "year": "2025",
+        "journal": "Frontiers Comput. Sci.",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.1007/S11704-024-40763-6",
+        "arxiv_id": "",
+        "url": "https://doi.org/10.1007/s11704-024-40763-6",
+        "volume": "19",
+        "pages": "192350"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "chen2025scienceagentbenchrigorousassessmentlanguage",
+        "entry_type": "inproceedings",
+        "title": "ScienceAgentBench: Toward Rigorous Assessment of Language Agents for Data-Driven Scientific Discovery",
+        "author": "Ziru Chen and\nShijie Chen and\nYuting Ning and\nQianheng Zhang and\nBoshi Wang and\nBotao Yu and\nYifei Li and\nZeyi Liao and\nChen Wei and\nZitong Lu and\nVishal Dey and\nMingyi Xue and\nFrazier N. Baker and\nBenjamin Burns and\nDaniel Adu-Ampratwum and\nXuhui Huang and\nXia Ning and\nSong Gao and\nYu Su and\nHuan Sun",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "The Thirteenth International Conference on Learning Representations,\nICLR 2025, Singapore, April 24-28, 2025",
+        "publisher": "OpenReview.net",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://openreview.net/forum?id=6z4YKr0GK6",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "Wang_2024",
+        "entry_type": "article",
+        "title": "A survey on large language model based autonomous agents",
+        "author": "Wang, Lei and Ma, Chen and Feng, Xueyang and Zhang, Zeyu and Yang, Hao and Zhang, Jingsen and Chen, Zhiyuan and Tang, Jiakai and Chen, Xu and Lin, Yankai and Zhao, Wayne Xin and Wei, Zhewei and Wen, Jirong",
+        "year": "2024",
+        "journal": "Frontiers of Computer Science",
+        "booktitle": "",
+        "publisher": "Springer Science and Business Media LLC",
+        "doi": "10.1007/s11704-024-40231-1",
+        "arxiv_id": "",
+        "url": "http://dx.doi.org/10.1007/s11704-024-40231-1",
+        "volume": "18",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wan2025deepresearcharenaexamllms",
+        "entry_type": "misc",
+        "title": "DeepResearch Arena: The First Exam of LLMs' Research Abilities via Seminar-Grounded Tasks",
+        "author": "Haiyuan Wan and Chen Yang and Junchi Yu and Meiqi Tu and Jiaxuan Lu and Di Yu and Jianbao Cao and Ben Gao and Jiaqing Xie and Aoran Wang and Wenlong Zhang and Philip Torr and Dongzhan Zhou",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2509.01396",
+        "url": "https://arxiv.org/abs/2509.01396",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "pan2025visshepherdconstructingcriticllmbased",
+        "entry_type": "article",
+        "title": "VIS-Shepherd: Constructing Critic for LLM-based Data Visualization Generation",
+        "author": "Bo Pan and\nYixiao Fu and\nKe Wang and\nJunyu Lu and\nLunke Pan and\nZiyang Qian and\nYuhan Chen and\nGuoliang Wang and\nYitao Zhou and\nLi Zheng and\nYinghao Tang and\nZhen Wen and\nYuchen Wu and\nJunhua Lu and\nBiao Zhu and\nMinfeng Zhu and\nBo Zhang and\nWei Chen",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2506.13326",
+        "arxiv_id": "2506.13326",
+        "url": "https://doi.org/10.48550/arXiv.2506.13326",
+        "volume": "abs/2506.13326",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zheng2025deepresearcherscalingdeepresearch",
+        "entry_type": "misc",
+        "title": "DeepResearcher: Scaling Deep Research via Reinforcement Learning in Real-world Environments",
+        "author": "Yuxiang Zheng and Dayuan Fu and Xiangkun Hu and Xiaojie Cai and Lyumanshan Ye and Pengrui Lu and Pengfei Liu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2504.03160",
+        "url": "https://arxiv.org/abs/2504.03160",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "lu2024proactive",
+        "entry_type": "inproceedings",
+        "title": "Proactive Agent: Shifting LLM Agents from Reactive Responses to Active Assistance",
+        "author": "Yaxi Lu and\nShenzhi Yang and\nCheng Qian and\nGuirong Chen and\nQinyu Luo and\nYesai Wu and\nHuadong Wang and\nXin Cong and\nZhong Zhang and\nYankai Lin and\nWeiwen Liu and\nYasheng Wang and\nZhiyuan Liu and\nFangming Liu and\nMaosong Sun",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "The Thirteenth International Conference on Learning Representations,\nICLR 2025, Singapore, April 24-28, 2025",
+        "publisher": "OpenReview.net",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://openreview.net/forum?id=sRIU6k2TcU",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "xu2022globem",
+        "entry_type": "article",
+        "title": "GLOBEM dataset: multi-year datasets for longitudinal human behavior modeling generalization",
+        "author": "Xu, Xuhai and Zhang, Han and Sefidgar, Yasaman and Ren, Yiyi and Liu, Xin and Seo, Woosuk and Brown, Jennifer and Kuehn, Kevin and Merrill, Mike and Nurius, Paula and others",
+        "year": "2022",
+        "journal": "Advances in neural information processing systems",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "35",
+        "pages": "24655--24692"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "testini2025measuringdatascienceautomation",
+        "entry_type": "misc",
+        "title": "Measuring Data Science Automation: A Survey of Evaluation Tools for AI Assistants and Agents",
+        "author": "Irene Testini and José Hernández-Orallo and Lorenzo Pacchiardi",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2506.08800",
+        "url": "https://arxiv.org/abs/2506.08800",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "xu2025theagentcompanybenchmarkingllmagents",
+        "entry_type": "article",
+        "title": "TheAgentCompany: Benchmarking LLM Agents on Consequential Real World Tasks",
+        "author": "Frank F. Xu and\nYufan Song and\nBoxuan Li and\nYuxuan Tang and\nKritanjali Jain and\nMengxue Bao and\nZora Zhiruo Wang and\nXuhui Zhou and\nZhitong Guo and\nMurong Cao and\nMingyang Yang and\nHao Yang Lu and\nAmaad Martin and\nZhe Su and\nLeander Maben and\nRaj Mehta and\nWayne Chi and\nLawrence Keunho Jang and\nYiqing Xie and\nShuyan Zhou and\nGraham Neubig",
+        "year": "2024",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2412.14161",
+        "arxiv_id": "2412.14161",
+        "url": "https://doi.org/10.48550/arXiv.2412.14161",
+        "volume": "abs/2412.14161",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhang2024proagentbuildingproactivecooperative",
+        "entry_type": "misc",
+        "title": "ProAgent: Building Proactive Cooperative Agents with Large Language Models",
+        "author": "Ceyao Zhang and Kaijie Yang and Siyi Hu and Zihao Wang and Guanghe Li and Yihang Sun and Cheng Zhang and Zhaowei Zhang and Anji Liu and Song-Chun Zhu and Xiaojun Chang and Junge Zhang and Feng Yin and Yitao Liang and Yaodong Yang",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2308.11339",
+        "url": "https://arxiv.org/abs/2308.11339",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "chatgpt",
+        "entry_type": "misc",
+        "title": "Introducing ChatGPT",
+        "author": "OpenAI",
+        "year": "2022",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://openai.com/blog/chatgpt",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wang2025proactivevideoqacomprehensivebenchmarkevaluating",
+        "entry_type": "misc",
+        "title": "ProactiveVideoQA: A Comprehensive Benchmark Evaluating Proactive Interactions in Video Large Language Models",
+        "author": "Yueqian Wang and Xiaojun Meng and Yifan Wang and Huishuai Zhang and Dongyan Zhao",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2507.09313",
+        "url": "https://arxiv.org/abs/2507.09313",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "sun2025dataagentholisticarchitecture",
+        "entry_type": "article",
+        "title": "Data Agent: A Holistic Architecture for Orchestrating Data+AI Ecosystems",
+        "author": "Zhaoyan Sun and\nJiayi Wang and\nXinyang Zhao and\nJiachi Wang and\nGuoliang Li",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2507.01599",
+        "arxiv_id": "2507.01599",
+        "url": "https://doi.org/10.48550/arXiv.2507.01599",
+        "volume": "abs/2507.01599",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "llama3",
+        "entry_type": "article",
+        "title": "The llama 3 herd of models",
+        "author": "Grattafiori, Aaron and Dubey, Abhimanyu and Jauhri, Abhinav and Pandey, Abhinav and Kadian, Abhishek and Al-Dahle, Ahmad and Letman, Aiesha and Mathur, Akhil and Schelten, Alan and Vaughan, Alex and others",
+        "year": "2024",
+        "journal": "arXiv preprint arXiv:2407.21783",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2407.21783",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "wang2020datashot",
+        "entry_type": "article",
+        "title": "DataShot: Automatic Generation of Fact Sheets from Tabular Data",
+        "author": "Wang, Yun and Sun, Zhida and Zhang, Haidong and Cui, Weiwei and Xu, Ke and Ma, Xiaojuan and Zhang, Dongmei",
+        "year": "2020",
+        "journal": "IEEE Transactions on Visualization and Computer Graphics",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.1109/TVCG.2019.2934398",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "26",
+        "pages": "895-905"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "guo2024large",
+        "entry_type": "misc",
+        "title": "Large Language Model based Multi-Agents: A Survey of Progress and Challenges",
+        "author": "Taicheng Guo and Xiuying Chen and Yaqi Wang and Ruidi Chang and Shichao Pei and Nitesh V. Chawla and Olaf Wiest and Xiangliang Zhang",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2402.01680",
+        "url": "https://arxiv.org/abs/2402.01680",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "li2024autodc",
+        "entry_type": "inproceedings",
+        "title": "AutoDCWorkflow: LLM-based Data Cleaning Workflow Auto-Generation and Benchmark",
+        "author": "Li, Lan  and\nFang, Liri  and\nLudäscher, Bertram  and\nTorvik, Vetle I",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "Findings of the Association for Computational Linguistics: EMNLP 2025",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "10.18653/v1/2025.findings-emnlp.410",
+        "arxiv_id": "",
+        "url": "https://aclanthology.org/2025.findings-emnlp.410/",
+        "volume": "",
+        "pages": "7766--7780"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "gpt4",
+        "entry_type": "article",
+        "title": "GPT-4 Technical Report",
+        "author": "OpenAI",
+        "year": "2023",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2303.08774",
+        "arxiv_id": "2303.08774",
+        "url": "https://doi.org/10.48550/arXiv.2303.08774",
+        "volume": "abs/2303.08774",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "hong-etal-2025-data",
+        "entry_type": "inproceedings",
+        "title": "Data Interpreter: An LLM Agent for Data Science",
+        "author": "Sirui Hong and\nYizhang Lin and\nBang Liu and\nBangbang Liu and\nBinhao Wu and\nCeyao Zhang and\nDanyang Li and\nJiaqi Chen and\nJiayi Zhang and\nJinlin Wang and\nLi Zhang and\nLingyao Zhang and\nMin Yang and\nMingchen Zhuge and\nTaicheng Guo and\nTuo Zhou and\nWei Tao and\nRobert Tang and\nXiangtao Lu and\nXiawu Zheng and\nXinbing Liang and\nYaying Fei and\nYuheng Cheng and\nYongxin Ni and\nZhibin Gou and\nZongze Xu and\nYuyu Luo and\nChenglin Wu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "Findings of the Association for Computational Linguistics, ACL 2025,\nVienna, Austria, July 27 - August 1, 2025",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://aclanthology.org/2025.findings-acl.1016/",
+        "volume": "",
+        "pages": "19796--19821"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "tang2025llmagentasdataanalystsurvey",
+        "entry_type": "misc",
+        "title": "LLM/Agent-as-Data-Analyst: A Survey",
+        "author": "Zirui Tang and Weizheng Wang and Zihang Zhou and Yang Jiao and Bangrui Xu and Boyu Niu and Dayou Zhou and Xuanhe Zhou and Guoliang Li and Yeye He and Wei Zhou and Yitong Song and Cheng Tan and Xue Yang and Chunwei Liu and Bin Wang and Conghui He and Xiaoyang Wang and Fan Wu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2509.23988",
+        "url": "https://arxiv.org/abs/2509.23988",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhang2025datascibench",
+        "entry_type": "article",
+        "title": "Datascibench: An llm agent benchmark for data science",
+        "author": "Zhang, Dan and Zhoubian, Sining and Cai, Min and Li, Fengzu and Yang, Lekang and Wang, Wei and Dong, Tianjiao and Hu, Ziniu and Tang, Jie and Yue, Yisong",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2502.13897",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2502.13897",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhao2025proactivevaproactivevisualanalytics",
+        "entry_type": "article",
+        "title": "ProactiveVA: Proactive Visual Analytics with LLM-Based UI Agent",
+        "author": "Yuheng Zhao and\nXueli Shu and\nLiwen Fan and\nLin Gao and\nYu Zhang and\nSiming Chen",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2507.18165",
+        "arxiv_id": "2507.18165",
+        "url": "https://doi.org/10.48550/arXiv.2507.18165",
+        "volume": "abs/2507.18165",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "li2024can",
+        "entry_type": "article",
+        "title": "Can LLM already serve as a database interface? a big bench for large-scale database grounded text-to-SQLs",
+        "author": "Li, Jinyang and Hui, Binyuan and Qu, Ge and Yang, Jiaxi and Li, Binhua and Li, Bowen and Wang, Bailin and Qin, Bowen and Geng, Ruiying and Huo, Nan and Zhou, Xuanhe and Ma, Chenhao and Li, Guoliang and Chang, Kevin C.C. and Huang, Fei and Cheng, Reynold and Li, Yongbin",
+        "year": "2023",
+        "journal": "",
+        "booktitle": "Proceedings of the 37th International Conference on Neural Information Processing Systems",
+        "publisher": "Curran Associates Inc.",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "deepseekai2025deepseekv32pushingfrontieropen",
+        "entry_type": "misc",
+        "title": "DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models",
+        "author": "DeepSeek-AI team",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2512.02556",
+        "url": "https://arxiv.org/abs/2512.02556",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "5team2025glm45agenticreasoningcoding",
+        "entry_type": "misc",
+        "title": "GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models",
+        "author": "GLM Team",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2508.06471",
+        "url": "https://arxiv.org/abs/2508.06471",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "kimiteam2025kimik2openagentic",
+        "entry_type": "misc",
+        "title": "Kimi K2: Open Agentic Intelligence",
+        "author": "Kimi Team",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2507.20534",
+        "url": "https://arxiv.org/abs/2507.20534",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yang2025qwen3technicalreport",
+        "entry_type": "misc",
+        "title": "Qwen3 Technical Report",
+        "author": "An Yang and Anfeng Li and Baosong Yang and Beichen Zhang and Binyuan Hui and Bo Zheng and Bowen Yu and Chang Gao and Chengen Huang and Chenxu Lv and Chujie Zheng and Dayiheng Liu and Fan Zhou and Fei Huang and Feng Hu and Hao Ge and Haoran Wei and Huan Lin and Jialong Tang and Jian Yang and Jianhong Tu and Jianwei Zhang and Jianxin Yang and Jiaxi Yang and Jing Zhou and Jingren Zhou and Junyang Lin and Kai Dang and Keqin Bao and Kexin Yang and Le Yu and Lianghao Deng and Mei Li and Mingfeng Xue and Mingze Li and Pei Zhang and Peng Wang and Qin Zhu and Rui Men and Ruize Gao and Shixuan Liu and Shuang Luo and Tianhao Li and Tianyi Tang and Wenbiao Yin and Xingzhang Ren and Xinyu Wang and Xinyu Zhang and Xuancheng Ren and Yang Fan and Yang Su and Yichang Zhang and Yinger Zhang and Yu Wan and Yuqiong Liu and Zekun Wang and Zeyu Cui and Zhenru Zhang and Zhipeng Zhou and Zihan Qiu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2505.09388",
+        "url": "https://arxiv.org/abs/2505.09388",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 3
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "MiniMaxM2_2025",
+        "entry_type": "misc",
+        "title": "MiniMax M2: An open-weight MoE language model for coding and agentic workflows",
+        "author": "MiniMax AI",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "anthropic_claude_4_5_2025",
+        "entry_type": "misc",
+        "title": "Claude 4.5",
+        "author": "Anthropic",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "comanici2025gemini25pushingfrontier",
+        "entry_type": "misc",
+        "title": "Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities",
+        "author": "Comanici, Gheorghe and Bieber, Eric and Schaekermann, Mike and Pasupat, Ice and Sachdeva, Noveen and Dhillon, Inderjit and Blistein, Marcel and Ram, Ori and Zhang, Dan and Rosen, Evan and others",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2507.06261",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2507.06261",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "du2025deepresearch",
+        "entry_type": "article",
+        "title": "DeepResearch Bench: A Comprehensive Benchmark for Deep Research Agents",
+        "author": "Du, Mingxuan and Xu, Benfeng and Zhu, Chiwei and Wang, Xiaorui and Mao, Zhendong",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2506.11763",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2506.11763",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "bradley1952rank",
+        "entry_type": "article",
+        "title": "Rank analysis of incomplete block designs: I. the method of paired comparisons",
+        "author": "Bradley, Ralph Allan and Terry, Milton E",
+        "year": "1952",
+        "journal": "Biometrika",
+        "booktitle": "",
+        "publisher": "JSTOR",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "39",
+        "pages": "324--345"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "arora2025healthbench",
+        "entry_type": "article",
+        "title": "Healthbench: Evaluating large language models towards improved human health",
+        "author": "Arora, Rahul K and Wei, Jason and Hicks, Rebecca Soskin and Bowman, Preston and Quiñonero-Candela, Joaquin and Tsimpourlas, Foivos and Sharman, Michael and Shah, Meghan and Vallone, Andrea and Beutel, Alex and others",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2505.08775",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2505.08775",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "perez2025llm",
+        "entry_type": "article",
+        "title": "An LLM-Based Approach for Insight Generation in Data Analysis",
+        "author": "Pérez, Alberto Sánchez and Boukhary, Alaa and Papotti, Paolo and Lozano, Luis Castejón and Elwood, Adam",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2503.11664",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2503.11664",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "anthropicMCP2024",
+        "entry_type": "misc",
+        "title": "Model Context Protocol Specification",
+        "author": "Anthropic",
+        "year": "2024",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "vykhopen2025beyond",
+        "entry_type": "article",
+        "title": "Beyond Text-to-SQL: Autonomous Research-Driven Database Exploration with DAR",
+        "author": "Vykhopen, Ostap and Skorik, Viktoria and Tereschenko, Maxim and Solopova, Veronika",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2512.14622",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2512.14622",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "lei2025dacomp",
+        "entry_type": "article",
+        "title": "DAComp: Benchmarking Data Agents across the Full Data Intelligence Lifecycle",
+        "author": "Lei, Fangyu and Meng, Jinxiang and Huang, Yiming and Zhao, Junjie and Zhang, Yitong and Luo, Jianwen and Zou, Xin and Yang, Ruiyi and Shi, Wenbo and Gao, Yan and others",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2512.04324",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2512.04324",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "sahu2024insightbench",
+        "entry_type": "article",
+        "title": "Insightbench: Evaluating business analytics agents through multi-step insight generation",
+        "author": "Sahu, Gaurav and Puri, Abhay and Rodriguez, Juan and Abaskohi, Amirhossein and Chegini, Mohammad and Drouin, Alexandre and Taslakian, Perouz and Zantedeschi, Valentina and Lacoste, Alexandre and Vazquez, David and others",
+        "year": "2024",
+        "journal": "arXiv preprint arXiv:2407.06423",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2407.06423",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "islam2024datanarrative",
+        "entry_type": "article",
+        "title": "DataNarrative: Automated data-driven storytelling with visualizations and texts",
+        "author": "Islam, Mohammed Saidul and Laskar, Md Tahmid Rahman and Parvez, Md Rizwan and Hoque, Enamul and Joty, Shafiq",
+        "year": "2024",
+        "journal": "arXiv preprint arXiv:2408.05346",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2408.05346",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "gupta2025bi",
+        "entry_type": "inproceedings",
+        "title": "BI-Bench: A Comprehensive Benchmark Dataset and Unsupervised Evaluation for BI Systems",
+        "author": "Gupta, Ankush and Aggarwal, Aniya and Bithel, Shivangi and Agarwal, Arvind",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 6: Industry Track)",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "",
+        "pages": "1287--1299"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "yu-etal-2018-spider",
+        "entry_type": "inproceedings",
+        "title": "Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task",
+        "author": "Tao Yu and\nRui Zhang and\nKai Yang and\nMichihiro Yasunaga and\nDongxu Wang and\nZifan Li and\nJames Ma and\nIrene Li and\nQingning Yao and\nShanelle Roman and\nZilin Zhang and\nDragomir R. Radev",
+        "year": "2018",
+        "journal": "",
+        "booktitle": "Proceedings of the 2018 Conference on Empirical Methods in Natural\nLanguage Processing, Brussels, Belgium, October 31 - November 4, 2018",
+        "publisher": "Association for Computational Linguistics",
+        "doi": "10.18653/V1/D18-1425",
+        "arxiv_id": "",
+        "url": "https://doi.org/10.18653/v1/d18-1425",
+        "volume": "",
+        "pages": "3911--3921"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "salemi2025llmbasedmultiagentblackboardinformation",
+        "entry_type": "article",
+        "title": "LLM-based Multi-Agent Blackboard System for Information Discovery in Data Science",
+        "author": "Alireza Salemi and\nMihir Parmar and\nPalash Goyal and\nYiwen Song and\nJinsung Yoon and\nHamed Zamani and\nHamid Palangi and\nTomas Pfister",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2510.01285",
+        "arxiv_id": "2510.01285",
+        "url": "https://doi.org/10.48550/arXiv.2510.01285",
+        "volume": "abs/2510.01285",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "zhang2025deepanalyze",
+        "entry_type": "article",
+        "title": "DeepAnalyze: Agentic Large Language Models for Autonomous Data Science",
+        "author": "Zhang, Shaolei and Fan, Ju and Fan, Meihao and Li, Guoliang and Du, Xiaoyong",
+        "year": "2025",
+        "journal": "arXiv preprint arXiv:2510.16872",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2510.16872",
+        "url": "",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 6
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "brown2020language",
+        "entry_type": "article",
+        "title": "Language models are few-shot learners",
+        "author": "Brown, Tom and Mann, Benjamin and Ryder, Nick and Subbiah, Melanie and Kaplan, Jared D and Dhariwal, Prafulla and Neelakantan, Arvind and Shyam, Pranav and Sastry, Girish and Askell, Amanda and others",
+        "year": "2020",
+        "journal": "Advances in neural information processing systems",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "33",
+        "pages": "1877--1901"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "openai2025gpt5",
+        "entry_type": "techreport",
+        "title": "GPT-5 System Card",
+        "author": "OpenAI",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "https://cdn.openai.com/gpt-5-system-card.pdf",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 3
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "johnson2023mimic",
+        "entry_type": "article",
+        "title": "MIMIC-IV, a freely accessible electronic health record dataset",
+        "author": "Johnson, Alistair EW and Bulgarelli, Lucas and Shen, Lu and Gayles, Alvin and Shammout, Ayad and Horng, Steven and Pollard, Tom J and Hao, Sicheng and Moody, Benjamin and Gow, Brian and others",
+        "year": "2023",
+        "journal": "Scientific data",
+        "booktitle": "",
+        "publisher": "Nature Publishing Group UK London",
+        "doi": "",
+        "arxiv_id": "",
+        "url": "",
+        "volume": "10",
+        "pages": "1"
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 1
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "egg2025dabstepdataagentbenchmark",
+        "entry_type": "article",
+        "title": "DABstep: Data Agent Benchmark for Multi-step Reasoning",
+        "author": "Alex Egg and\nMartin Iglesias Goyanes and\nFriso Kingma and\nAndreu Mora and\nLeandro von Werra and\nThomas Wolf",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2506.23719",
+        "arxiv_id": "2506.23719",
+        "url": "https://doi.org/10.48550/arXiv.2506.23719",
+        "volume": "abs/2506.23719",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "plaat2025agenticlargelanguagemodels",
+        "entry_type": "article",
+        "title": "Agentic Large Language Models, a survey",
+        "author": "Aske Plaat and\nMax J. van Duijn and\nNiki van Stein and\nMike Preuss and\nPeter van der Putten and\nKees Joost Batenburg",
+        "year": "2025",
+        "journal": "CoRR",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "10.48550/ARXIV.2503.23037",
+        "arxiv_id": "2503.23037",
+        "url": "https://doi.org/10.48550/arXiv.2503.23037",
+        "volume": "abs/2503.23037",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    },
+    {
+      "entry": {
+        "key": "qwen2025qwen25technicalreport",
+        "entry_type": "misc",
+        "title": "Qwen2.5 Technical Report",
+        "author": "Qwen and : and An Yang and Baosong Yang and Beichen Zhang and Binyuan Hui and Bo Zheng and Bowen Yu and Chengyuan Li and Dayiheng Liu and Fei Huang and Haoran Wei and Huan Lin and Jian Yang and Jianhong Tu and Jianwei Zhang and Jianxin Yang and Jiaxi Yang and Jingren Zhou and Junyang Lin and Kai Dang and Keming Lu and Keqin Bao and Kexin Yang and Le Yu and Mei Li and Mingfeng Xue and Pei Zhang and Qin Zhu and Rui Men and Runji Lin and Tianhao Li and Tianyi Tang and Tingyu Xia and Xingzhang Ren and Xuancheng Ren and Yang Fan and Yang Su and Yichang Zhang and Yu Wan and Yuqiong Liu and Zeyu Cui and Zhenru Zhang and Zihan Qiu",
+        "year": "2025",
+        "journal": "",
+        "booktitle": "",
+        "publisher": "",
+        "doi": "",
+        "arxiv_id": "2412.15115",
+        "url": "https://arxiv.org/abs/2412.15115",
+        "volume": "",
+        "pages": ""
+      },
+      "comparison": null,
+      "usage": {
+        "is_used": true,
+        "usage_count": 2
+      },
+      "evaluations": []
+    }
+  ],
+  "submission_results": [
+    {
+      "checker": "reference",
+      "passed": false,
+      "severity": "warning",
+      "message": "Unreferenced label: 'appendix:system_prompt'",
+      "line_number": 964,
+      "line_content": "\\subsection{System Prompt}\\label{appendix:system_prompt}",
+      "suggestion": "Add \\ref{appendix:system_prompt} or \\autoref{appendix:system_prompt} where appropriate",
+      "match_text": null
+    },
+    {
+      "checker": "reference",
+      "passed": false,
+      "severity": "warning",
+      "message": "Appendix section 'appendix:system_prompt' is not referenced in main text",
+      "line_number": 964,
+      "line_content": null,
+      "suggestion": "Add a reference to this appendix section in the main text",
+      "match_text": null
+    },
+    {
+      "checker": "formatting",
+      "passed": false,
+      "severity": "info",
+      "message": "Mixed citation styles detected: textual, plain",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Consider using consistent citation style throughout",
+      "match_text": null
+    },
+    {
+      "checker": "equation",
+      "passed": false,
+      "severity": "info",
+      "message": "Mixed inline math: $79 \\$...\\$ and 2 \\(...\\)",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Use consistent inline math delimiters throughout",
+      "match_text": null
+    },
+    {
+      "checker": "sentence",
+      "passed": false,
+      "severity": "info",
+      "message": "Hedging language: 'highly effective'",
+      "line_number": 421,
+      "line_content": null,
+      "suggestion": "Consider more precise language",
+      "match_text": null
+    },
+    {
+      "checker": "sentence",
+      "passed": false,
+      "severity": "info",
+      "message": "Hedging language: 'clearly'",
+      "line_number": 560,
+      "line_content": null,
+      "suggestion": "Unsupported assertion - consider citing or removing",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "warning",
+      "message": "Inconsistent spelling: color, colour",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Use 'color' consistently throughout",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "warning",
+      "message": "Inconsistent spelling: behavior, behaviour",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Use 'behavior' consistently throughout",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "warning",
+      "message": "Inconsistent spelling: analyze, analyse",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Use 'analyze' consistently throughout",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "info",
+      "message": "Inconsistent hyphenation: 'decision-making' vs 'decision making'",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Choose one form and use it consistently",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "info",
+      "message": "Inconsistent hyphenation: 'pre-defined' vs 'predefined'",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Choose one form and use it consistently",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "info",
+      "message": "Inconsistent hyphenation: 'alan-turing-institute' vs 'alan turing institute'",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Choose one form and use it consistently",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "info",
+      "message": "Inconsistent hyphenation: 'de-identified' vs 'deidentified'",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Choose one form and use it consistently",
+      "match_text": null
+    },
+    {
+      "checker": "consistency",
+      "passed": false,
+      "severity": "info",
+      "message": "Inconsistent hyphenation: 'ReAct-style' vs 'ReAct style'",
+      "line_number": null,
+      "line_content": null,
+      "suggestion": "Choose one form and use it consistently",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'EHR' used without definition (possible full form: 'electronic health record')",
+      "line_number": 300,
+      "line_content": null,
+      "suggestion": "Define on first use: 'electronic health record (EHR)'",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'SEC' used without definition (possible full form: 'significant evaluation challenges')",
+      "line_number": 302,
+      "line_content": null,
+      "suggestion": "Define on first use: 'significant evaluation challenges (SEC)'",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'IRS' used without definition (possible full form: 'it reveal strategic')",
+      "line_number": 807,
+      "line_content": null,
+      "suggestion": "Define on first use: 'it reveal strategic (IRS)'",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'CCR' used without definition (possible full form: 'complete complex real')",
+      "line_number": 813,
+      "line_content": null,
+      "suggestion": "Define on first use: 'complete complex real (CCR)'",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'TIE' used without definition (possible full form: 'thereby improving efficiency')",
+      "line_number": 1104,
+      "line_content": null,
+      "suggestion": "Define on first use: 'thereby improving efficiency (TIE)'",
+      "match_text": null
+    },
+    {
+      "checker": "acronym",
+      "passed": false,
+      "severity": "warning",
+      "message": "Acronym 'EPS' used without definition (possible full form: 'energy price spikes')",
+      "line_number": 1511,
+      "line_content": null,
+      "suggestion": "Define on first use: 'energy price spikes (EPS)'",
+      "match_text": null
+    },
+    {
+      "checker": "anonymization",
+      "passed": false,
+      "severity": "error",
+      "message": "HuggingFace profile URL may reveal author identity",
+      "line_number": 228,
+      "line_content": "{\\scriptsize \\textbf{Project:} \\url{https://huggingface.co/spaces/thinkwee/DDR_Bench}}",
+      "suggestion": "Replace with anonymized URL or remove for review",
+      "match_text": null
+    }
+  ],
+  "retractions": [],
+  "url_findings": [],
+  "duplicates": [],
+  "missing_citations": []
+}

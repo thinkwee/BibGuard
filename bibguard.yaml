@@ -28,6 +28,23 @@ files:
 
 
 # ==============================================================================
+# 🌐 Network / Politeness
+# ==============================================================================
+network:
+  # Real email used in User-Agent for arXiv/CrossRef/OpenAlex polite-pool requests.
+  # arXiv's robots policy asks for a real contact. Strongly recommended to fill in.
+  contact_email: ""
+
+  # Cache HTTP responses to a local SQLite DB. Same `entry.key` won't re-hit network
+  # within the TTL window. Hugely speeds up re-runs.
+  cache_enabled: true
+  cache_ttl_hours: 24
+
+  # Auto-retry on 429/5xx with exponential backoff.
+  retry_total: 5
+  retry_backoff_factor: 1.5
+
+# ==============================================================================
 # 🎓 Conference Template
 # ==============================================================================
 # Specify a conference template for venue-specific checks and formatting rules.
@@ -59,7 +76,7 @@ bibliography:
   
   # Relevance Assessment - Use LLM to evaluate if citations match their context
   # Requires LLM configuration (see llm section below). Disabled by default due to API costs.
-  check_relevance: false
+  check_relevance: true
 
 # ==============================================================================
 # 📋 Submission Quality Checks
@@ -126,6 +143,21 @@ submission:
   anonymization: true
 
 # ==============================================================================
+# 🌐 Network-Bound Bibliography Checks
+# ==============================================================================
+# These run only when explicitly enabled. Both operate solely on bib entries
+# that carry the relevant field (no DOI ⇒ retraction skipped, no url= ⇒
+# liveness skipped). The web UI's "Strict" preset turns both on.
+submission_extra:
+  # URL Liveness - HEAD-then-GET every entry.url to find dead links.
+  # Slow on large bibs (one HTTP roundtrip per URL); off by default.
+  url_liveness: false
+
+  # Retractions - Look up every entry.doi against CrossRef's update-to relation
+  # to flag retracted, withdrawn, or "expression of concern" papers.
+  retraction: true
+
+# ==============================================================================
 # 🔍 Metadata Check Workflow
 # ==============================================================================
 # Define the data sources and order for metadata validation.
@@ -133,7 +165,7 @@ submission:
 # Set enabled: false to skip a particular source.
 workflow:
   - name: arxiv_id
-    enabled: true
+    enabled: false
     description: "Lookup by arXiv ID (fastest, most reliable for preprints)"
     
   - name: crossref_doi  
@@ -153,7 +185,7 @@ workflow:
     description: "OpenAlex API (broad coverage across disciplines)"
     
   - name: arxiv_title
-    enabled: true
+    enabled: false
     description: "Search arXiv by title (fallback when ID unavailable)"
     
   - name: crossref_title
@@ -171,17 +203,18 @@ llm:
   # Backend provider: ollama, vllm, gemini, openai, anthropic, deepseek
   # Each backend requires different setup (API keys, local installation, etc.)
   backend: "gemini"
-  
+
   # Model name (leave empty to use backend default)
-  # Examples: "gpt-4", "claude-3-opus", "gemini-pro", "llama3"
+  # Examples: "gpt-4o-mini", "claude-haiku-4-5-20251001", "gemini-2.5-flash", "llama3"
   model: ""
   
   # API endpoint (leave empty to use backend default)
   # Only needed for self-hosted models (vllm, ollama) or custom endpoints
   endpoint: ""
   
-  # API key (recommended to use environment variables instead)
-  # Set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, etc. in your environment
+  # API key (RECOMMENDED: leave empty and use environment variables instead)
+  # Set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, etc.
+  # in your shell. BibGuard will read from $<BACKEND>_API_KEY automatically.
   api_key: ""
 
 # ==============================================================================

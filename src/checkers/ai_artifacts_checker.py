@@ -125,7 +125,7 @@ class AIArtifactsChecker(BaseChecker):
                         severity=CheckSeverity.ERROR,
                         message=f"{description} detected",
                         line_number=line_num,
-                        line_content=line.strip()[:100],
+                        line_content=line.strip(),
                         suggestion="Remove AI-generated conversational text"
                     ))
                     break  # One match per line for this category
@@ -139,7 +139,7 @@ class AIArtifactsChecker(BaseChecker):
                         severity=CheckSeverity.WARNING,
                         message=f"{description}: '{match.group(0)[:50]}'",
                         line_number=line_num,
-                        line_content=line.strip()[:100],
+                        line_content=line.strip(),
                         suggestion="Replace placeholder with actual content or remove"
                     ))
             
@@ -169,7 +169,7 @@ class AIArtifactsChecker(BaseChecker):
                         severity=CheckSeverity.INFO,
                         message=f"Possible {description} in LaTeX",
                         line_number=line_num,
-                        line_content=line.strip()[:100],
+                        line_content=line.strip(),
                         suggestion="Convert to LaTeX formatting or remove if unintentional"
                     ))
         

@@ -97,11 +97,36 @@ class LLMConfig:
     api_key: str = ""
 
 
-@dataclass 
+@dataclass
 class OutputConfig:
     """Output configuration."""
     quiet: bool = False
     minimal_verified: bool = False
+    formats: List[str] = field(default_factory=lambda: ["markdown", "html"])  # markdown, html, json
+
+
+@dataclass
+class NetworkConfig:
+    """Network / politeness configuration."""
+    contact_email: str = ""
+    cache_enabled: bool = True
+    cache_ttl_hours: int = 24
+    retry_total: int = 5
+    retry_backoff_factor: float = 1.5
+
+
+@dataclass
+class GlossaryConfig:
+    """User-supplied project glossary for ConsistencyChecker / AcronymChecker."""
+    preferred: List[str] = field(default_factory=list)  # e.g. ["Transformer", "fine-tuning"]
+    acronyms: Dict[str, str] = field(default_factory=dict)  # e.g. {"NLP": "Natural Language Processing"}
+
+
+@dataclass
+class SubmissionExtraConfig:
+    """Extra submission checks added on top of the original list."""
+    url_liveness: bool = False
+    retraction: bool = True
 
 
 @dataclass
@@ -111,9 +136,12 @@ class BibGuardConfig:
     template: str = ""
     bibliography: BibliographyConfig = field(default_factory=BibliographyConfig)
     submission: SubmissionConfig = field(default_factory=SubmissionConfig)
+    submission_extra: SubmissionExtraConfig = field(default_factory=SubmissionExtraConfig)
     workflow: List[WorkflowStep] = field(default_factory=list)
     llm: LLMConfig = field(default_factory=LLMConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    network: NetworkConfig = field(default_factory=NetworkConfig)
+    glossary: GlossaryConfig = field(default_factory=GlossaryConfig)
     
     # Internal fields to store discovered files in directory mode
     _bib_files: List[Path] = field(default_factory=list)
@@ -225,11 +253,48 @@ def load_config(config_path: str) -> BibGuardConfig:
     # Parse output section
     if 'output' in data:
         out = data['output']
+        formats = out.get('formats', ["markdown", "html"])
+        if isinstance(formats, str):
+            formats = [f.strip() for f in formats.split(",") if f.strip()]
         config.output = OutputConfig(
             quiet=out.get('quiet', False),
-            minimal_verified=out.get('minimal_verified', False)
+            minimal_verified=out.get('minimal_verified', False),
+            formats=list(formats),
         )
-    
+
+    # Parse network section
+    if 'network' in data:
+        net = data['network'] or {}
+        config.network = NetworkConfig(
+            contact_email=net.get('contact_email', ''),
+            cache_enabled=bool(net.get('cache_enabled', True)),
+            cache_ttl_hours=int(net.get('cache_ttl_hours', 24)),
+            retry_total=int(net.get('retry_total', 5)),
+            retry_backoff_factor=float(net.get('retry_backoff_factor', 1.5)),
+        )
+
+    # Parse glossary section
+    if 'glossary' in data:
+        g = data['glossary'] or {}
+        preferred = g.get('preferred', []) or []
+        acronyms = g.get('acronyms', {}) or {}
+        if not isinstance(preferred, list):
+            preferred = [str(preferred)]
+        if not isinstance(acronyms, dict):
+            acronyms = {}
+        config.glossary = GlossaryConfig(
+            preferred=[str(x) for x in preferred],
+            acronyms={str(k): str(v) for k, v in acronyms.items()},
+        )
+
+    # Parse submission_extra section (URL liveness, retraction)
+    if 'submission_extra' in data:
+        sx = data['submission_extra'] or {}
+        config.submission_extra = SubmissionExtraConfig(
+            url_liveness=bool(sx.get('url_liveness', False)),
+            retraction=bool(sx.get('retraction', True)),
+        )
+
     return config
 
 
@@ -264,6 +329,15 @@ files:
 
 template: ""
 
+network:
+  # Real email used in polite-pool User-Agents (arXiv/CrossRef/OpenAlex).
+  # Strongly recommended.
+  contact_email: ""
+  cache_enabled: true       # Local SQLite cache for HTTP responses
+  cache_ttl_hours: 24
+  retry_total: 5
+  retry_backoff_factor: 1.5
+
 bibliography:
   check_metadata: true
   check_usage: true
@@ -285,16 +359,27 @@ submission:
   citation_quality: true
   anonymization: true
 
+submission_extra:
+  url_liveness: false       # HEAD-check every entry.url field (slow, off by default)
+  retraction: true          # Flag retracted DOIs via CrossRef
+
+# Project-specific glossary helps ConsistencyChecker and AcronymChecker
+# avoid false positives and enforce house style.
+glossary:
+  preferred: []             # e.g. ["Transformer", "fine-tuning"]
+  acronyms: {}              # e.g. {NLP: "Natural Language Processing"}
+
 llm:
-  backend: "gemini"
-  model: ""
-  api_key: ""
+  backend: "gemini"         # gemini | openai | anthropic | deepseek | ollama | vllm
+  model: ""                 # leave empty for sensible default per backend
+  api_key: ""               # prefer env var <BACKEND>_API_KEY
 
 output:
   quiet: false
   minimal_verified: false
+  formats: [markdown, html] # any of: markdown, html, json
 """
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(default)
-    
+
     return output_path

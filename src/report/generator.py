@@ -1,10 +1,11 @@
 """
 Report generator for bibliography check results.
 """
+import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
-from typing import Optional, List
+from typing import Any, Optional, List, Dict
 from pathlib import Path
 
 from ..parsers.bib_parser import BibEntry
@@ -13,6 +14,7 @@ from ..analyzers.usage_checker import UsageResult
 from ..analyzers.llm_evaluator import EvaluationResult
 from ..analyzers.duplicate_detector import DuplicateGroup
 from ..checkers.base import CheckResult, CheckSeverity
+from .html_report import render_standalone_html
 
 
 @dataclass
@@ -22,6 +24,14 @@ class EntryReport:
     comparison: Optional[ComparisonResult]
     usage: Optional[UsageResult]
     evaluations: list[EvaluationResult]
+
+
+def _json_default(o):
+    if is_dataclass(o):
+        return asdict(o)
+    if hasattr(o, "value"):
+        return o.value
+    return str(o)
 
 
 class ReportGenerator:
@@ -40,6 +50,14 @@ class ReportGenerator:
         self.template = None  # Conference template if used
         self.check_preprint_ratio = check_preprint_ratio  # Whether to check preprint ratio
         self.preprint_warning_threshold = preprint_warning_threshold  # Threshold for preprint warning
+        self.retraction_findings: list = []  # F1 results
+        self.url_findings: list = []        # F2 results
+
+    def set_retraction_findings(self, findings) -> None:
+        self.retraction_findings = list(findings or [])
+
+    def set_url_findings(self, findings) -> None:
+        self.url_findings = list(findings or [])
 
     
     def add_entry_report(self, report: EntryReport):
@@ -177,7 +195,6 @@ class ReportGenerator:
             "Unreferenced table": "Unreferenced Table",
             "Unreferenced section": "Unreferenced Section",
             "Unreferenced label": "Unreferenced Label",
-            "Multiple blank lines": "Multiple Blank Lines",
             "Citation from": "Old Citation (10+ years)",
             "Hedging language": "Hedging/Vague Language",
             "Redundant phrase": "Redundant Phrasing",
@@ -233,20 +250,22 @@ class ReportGenerator:
         return "\n".join(lines)
     
     def _generate_header(self) -> list[str]:
-        """Generate report header."""
-        bib_names = ", ".join([f"`{Path(f).name}`" for f in self.bib_files]) if self.bib_files else "N/A"
-        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
+        """Generate report header.
+
+        File names are intentionally not printed — keep the report
+        portable, and never expose local source paths to anyone the
+        report is shared with.
+        """
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
         return [
             "# Bibliography Validation Report",
             "",
             f"**Generated:** {timestamp}",
             "",
-            "| File Type | Filename |",
-            "|-----------|----------|",
-            f"| **Bib File(s)** | {bib_names} |",
-            f"| **TeX File(s)** | {tex_names} |"
+            "| Inputs | Count |",
+            "|--------|-------|",
+            f"| **Bib File(s)** | {len(self.bib_files)} |",
+            f"| **TeX File(s)** | {len(self.tex_files)} |",
         ]
 
     def _generate_disclaimer(self) -> list[str]:
@@ -526,6 +545,13 @@ class ReportGenerator:
                             lines.append(f"      - **Fetched:** `{', '.join(comp.fetched_authors)}`")
                     else:
                         lines.append(f"    - 🔸 {issue}")
+
+            # Positive notes (corroboration, year-tolerance) — separate from issues.
+            notes = list(getattr(comp, "notes", []) or [])
+            if notes and not minimal:
+                lines.append("  - **Notes:**")
+                for note in notes:
+                    lines.append(f"    - 🟢 {note}")
         
         # Relevance Status
         if report.evaluations and not minimal:
@@ -533,13 +559,8 @@ class ReportGenerator:
             for eval_res in report.evaluations:
                 score_icon = "🟢" if eval_res.relevance_score >= 4 else ("🟡" if eval_res.relevance_score == 3 else "🔴")
                 lines.append(f"  - {score_icon} **Score {eval_res.relevance_score}/5** ({eval_res.score_label})")
-                loc = []
-                if eval_res.file_path:
-                    loc.append(f"File: `{Path(eval_res.file_path).name}`")
                 if eval_res.line_number:
-                    loc.append(f"Line {eval_res.line_number}")
-                if loc:
-                    lines.append(f"    - {' | '.join(loc)}")
+                    lines.append(f"    - Line {eval_res.line_number}")
                 lines.append(f"    - *\"{eval_res.explanation}\"*")
 
         lines.append("")
@@ -589,42 +610,41 @@ class ReportGenerator:
                 by_checker[result.checker_name] = []
             by_checker[result.checker_name].append(result)
         
+        def _format_one(result) -> list[str]:
+            """Render a single CheckResult — line number only, no file path,
+            no truncation. The HTML report follows the same convention."""
+            buf = [f"- {result.message}"]
+            if result.line_number:
+                buf.append(f"  - Line {result.line_number}")
+            if result.line_content:
+                # Highlight the offending span if the checker provided one.
+                content = result.line_content
+                if getattr(result, "match_text", None) and result.match_text in content:
+                    idx = content.index(result.match_text)
+                    content = (content[:idx]
+                               + "**" + result.match_text + "**"
+                               + content[idx + len(result.match_text):])
+                buf.append(f"  - `{content}`")
+            if result.suggestion:
+                buf.append(f"  - 💡 *{result.suggestion}*")
+            return buf
+
         # Display errors first
         if errors:
             lines.append("### 🔴 Critical Errors")
             lines.append("")
             for result in errors:
-                lines.append(f"- **{result.message}**")
-                loc = []
-                if result.file_path:
-                    loc.append(f"File: `{Path(result.file_path).name}`")
-                if result.line_number:
-                    loc.append(f"Line {result.line_number}")
-                if loc:
-                    lines.append(f"  - {' | '.join(loc)}")
-                if result.line_content:
-                    lines.append(f"  - `{result.line_content[:80]}`")
-                if result.suggestion:
-                    lines.append(f"  - 💡 *{result.suggestion}*")
+                lines.extend(_format_one(result))
             lines.append("")
-        
+
         # Display warnings
         if warnings:
             lines.append("### 🟡 Warnings")
             lines.append("")
             for result in warnings:
-                lines.append(f"- {result.message}")
-                loc = []
-                if result.file_path:
-                    loc.append(f"File: `{Path(result.file_path).name}`")
-                if result.line_number:
-                    loc.append(f"Line {result.line_number}")
-                if loc:
-                    lines.append(f"  - {' | '.join(loc)}")
-                if result.suggestion:
-                    lines.append(f"  - 💡 *{result.suggestion}*")
+                lines.extend(_format_one(result))
             lines.append("")
-        
+
         # Display suggestions (collapsible)
         if infos:
             lines.append("### 🔵 Suggestions")
@@ -632,16 +652,7 @@ class ReportGenerator:
             lines.append("<summary>Click to view suggestions</summary>")
             lines.append("")
             for result in infos:
-                lines.append(f"- {result.message}")
-                loc = []
-                if result.file_path:
-                    loc.append(f"File: `{Path(result.file_path).name}`")
-                if result.line_number:
-                    loc.append(f"Line {result.line_number}")
-                if loc:
-                    lines.append(f"  - {' | '.join(loc)}")
-                if result.suggestion:
-                    lines.append(f"  - 💡 *{result.suggestion}*")
+                lines.extend(_format_one(result))
             lines.append("")
             lines.append("</details>")
             lines.append("")
@@ -671,12 +682,10 @@ class ReportGenerator:
         lines.append("")
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
-        bib_names = ", ".join([f"`{Path(f).name}`" for f in self.bib_files]) if self.bib_files else "N/A"
-        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
-        lines.append("| File Type | Filename |")
-        lines.append("|-----------|----------|")
-        lines.append(f"| **Bib File(s)** | {bib_names} |")
-        lines.append(f"| **TeX File(s)** | {tex_names} |")
+        lines.append("| Inputs | Count |")
+        lines.append("|--------|-------|")
+        lines.append(f"| **Bib File(s)** | {len(self.bib_files)} |")
+        lines.append(f"| **TeX File(s)** | {len(self.tex_files)} |")
         lines.append("")
         
         # Disclaimer
@@ -733,6 +742,131 @@ class ReportGenerator:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
     
+    # ------------------------------------------------------------------
+    # JSON + standalone HTML output
+    # ------------------------------------------------------------------
+    def build_payload(self) -> Dict[str, Any]:
+        """Build the JSON-serializable payload used by JSON & HTML outputs."""
+        def _entry_dict(e: BibEntry) -> dict:
+            return {
+                "key": e.key, "entry_type": e.entry_type, "title": e.title,
+                "author": e.author, "year": e.year, "journal": e.journal,
+                "booktitle": e.booktitle, "publisher": e.publisher,
+                "doi": e.doi, "arxiv_id": e.arxiv_id, "url": e.url,
+                "volume": e.volume, "pages": e.pages,
+            }
+
+        def _comparison_dict(c: Optional[ComparisonResult]) -> Optional[dict]:
+            if c is None: return None
+            return {
+                "is_match": c.is_match, "confidence": c.confidence,
+                "title_match": c.title_match, "title_similarity": c.title_similarity,
+                "author_match": c.author_match, "author_similarity": c.author_similarity,
+                "year_match": c.year_match,
+                "bib_title": c.bib_title, "fetched_title": c.fetched_title,
+                "bib_authors": c.bib_authors, "fetched_authors": c.fetched_authors,
+                "bib_year": c.bib_year, "fetched_year": c.fetched_year,
+                "issues": list(c.issues), "source": c.source,
+                "notes": list(getattr(c, "notes", []) or []),
+                "published_version_hint": getattr(c, "published_version_hint", ""),
+            }
+
+        def _usage_dict(u: Optional[UsageResult]) -> Optional[dict]:
+            if u is None: return None
+            return {"is_used": u.is_used, "usage_count": getattr(u, "usage_count", 0)}
+
+        def _eval_dict(ev: EvaluationResult) -> dict:
+            return {
+                "entry_key": ev.entry_key,
+                "relevance_score": ev.relevance_score,
+                "is_relevant": ev.is_relevant,
+                "explanation": ev.explanation,
+                "citation_role": getattr(ev, "citation_role", ""),
+                "line_number": ev.line_number, "file_path": ev.file_path,
+                "error": ev.error,
+            }
+
+        entries_payload = []
+        for r in self.entries:
+            entries_payload.append({
+                "entry": _entry_dict(r.entry),
+                "comparison": _comparison_dict(r.comparison),
+                "usage": _usage_dict(r.usage),
+                "evaluations": [_eval_dict(ev) for ev in (r.evaluations or [])],
+            })
+
+        sub_payload = []
+        for r in self.submission_results:
+            sub_payload.append({
+                "checker": r.checker_name, "passed": r.passed,
+                "severity": r.severity.value if hasattr(r.severity, "value") else str(r.severity),
+                "message": r.message, "line_number": r.line_number,
+                "line_content": r.line_content, "suggestion": r.suggestion,
+                # file_path intentionally omitted — user-facing report should
+                # never expose local tex paths.
+                "match_text": getattr(r, "match_text", None),
+            })
+
+        retr_payload = []
+        for f in self.retraction_findings:
+            res = getattr(f, "result", None)
+            retr_payload.append({
+                "entry_key": getattr(f, "entry_key", ""),
+                "doi": getattr(f, "doi", ""),
+                "is_retracted": getattr(res, "is_retracted", False) if res else False,
+                "update_type": getattr(res, "update_type", "") if res else "",
+                "notice_doi": getattr(res, "notice_doi", "") if res else "",
+                "notice_label": getattr(res, "notice_label", "") if res else "",
+                "notice_url": getattr(res, "notice_url", "") if res else "",
+            })
+
+        url_payload = []
+        for f in self.url_findings:
+            url_payload.append({
+                "entry_key": getattr(f, "entry_key", ""),
+                "url": getattr(f, "url", ""),
+                "status": getattr(f, "status", ""),
+                "status_code": getattr(f, "status_code", None),
+                "detail": getattr(f, "detail", ""),
+            })
+
+        duplicates = []
+        for grp in (self.duplicate_groups or []):
+            keys = [getattr(e, "key", "") for e in getattr(grp, "entries", [])]
+            duplicates.append([k for k in keys if k])
+
+        bib_stats, latex_stats = self.get_summary_stats()
+        return {
+            "meta": {
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                # Counts only — never expose source filenames in any
+                # downstream artifact (HTML, JSON, anywhere else).
+                "bib_files_count": len(self.bib_files),
+                "tex_files_count": len(self.tex_files),
+                "template": getattr(self.template, "name", "") if self.template else "",
+            },
+            "summary": {"bibliography": bib_stats, "latex": latex_stats},
+            "entries": entries_payload,
+            "submission_results": sub_payload,
+            "retractions": retr_payload,
+            "url_findings": url_payload,
+            "duplicates": duplicates,
+            "missing_citations": list(self.missing_citations),
+        }
+
+    def save_json(self, filepath: str) -> None:
+        """Write a machine-readable JSON dump of the full report."""
+        payload = self.build_payload()
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2, default=_json_default)
+
+    def save_html(self, filepath: str) -> None:
+        """Write a single self-contained HTML report (CSS+JS inlined)."""
+        payload = self.build_payload()
+        html = render_standalone_html(payload)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(html)
+
     def save_latex_quality_report(self, filepath: str, submission_results: List[CheckResult], template=None):
         """Generate and save LaTeX quality report (all tex-related quality checks)."""
         lines = []
@@ -742,8 +876,7 @@ class ReportGenerator:
         lines.append("")
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
-        tex_names = ", ".join([f"`{Path(f).name}`" for f in self.tex_files]) if self.tex_files else "N/A"
-        lines.append(f"**TeX File(s):** {tex_names}")
+        lines.append(f"**Inputs:** {len(self.tex_files)} TeX file(s)")
         lines.append("")
         
         if template:

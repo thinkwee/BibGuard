@@ -41,9 +41,6 @@ class FormattingChecker(BaseChecker):
         '^': r'(?<![\\$])\^(?![^$]*\$)',  # Unescaped ^ outside math
     }
     
-    # Multiple blank lines pattern (3 or more blank lines)
-    MULTI_BLANK_PATTERN = re.compile(r'\n\s*\n\s*\n\s*\n')
-    
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
         results = []
         lines = tex_content.split('\n')
@@ -66,8 +63,9 @@ class FormattingChecker(BaseChecker):
                     severity=CheckSeverity.INFO,
                     message="Citation without non-breaking space",
                     line_number=line_num,
-                    line_content=line.strip()[:100],
-                    suggestion="Use ~ before \\cite (e.g., 'text~\\cite{key}')"
+                    line_content=line.strip(),
+                    suggestion="Use ~ before \\cite (e.g., 'text~\\cite{key}')",
+                    match_text=match.group(0),
                 ))
             
             # Track citation styles
@@ -88,40 +86,6 @@ class FormattingChecker(BaseChecker):
                 severity=CheckSeverity.INFO,
                 message=f"Mixed citation styles detected: {', '.join(styles_used)}",
                 suggestion="Consider using consistent citation style throughout"
-            ))
-        
-        # Check for multiple blank lines (3 or more)
-        for match in self.MULTI_BLANK_PATTERN.finditer(tex_content):
-            line_num = self._find_line_number(tex_content, match.start())
-            # Count how many blank lines
-            blank_count = match.group(0).count('\n') - 1
-            
-            # Get context: the line before, blank lines, and the line after
-            start_pos = match.start()
-            end_pos = match.end()
-            
-            # Find the line before the blank lines
-            prev_line_start = tex_content.rfind('\n', 0, start_pos) + 1
-            prev_line_end = start_pos
-            prev_line = tex_content[prev_line_start:prev_line_end].rstrip()
-            
-            # Find the line after the blank lines
-            next_line_end = tex_content.find('\n', end_pos)
-            if next_line_end == -1:
-                next_line_end = len(tex_content)
-            next_line = tex_content[end_pos:next_line_end].rstrip()
-            
-            # Create visual representation with warning markers
-            blank_lines = '\n'.join([f"> blank line ⚠️"] * blank_count)
-            line_content = f"{prev_line}\n{blank_lines}\n{next_line}"
-            
-            results.append(self._create_result(
-                passed=False,
-                severity=CheckSeverity.INFO,
-                message=f"Multiple blank lines ({blank_count} consecutive blank lines)",
-                line_number=line_num,
-                line_content=line_content,
-                suggestion="Reduce to single blank line or use \\vspace"
             ))
         
         # Check for common issues with special characters
@@ -159,8 +123,9 @@ class FormattingChecker(BaseChecker):
                             severity=CheckSeverity.WARNING,
                             message="Unescaped & outside tabular/math environment",
                             line_number=line_num,
-                            line_content=line.strip()[:100],
-                            suggestion="Use \\& to escape"
+                            line_content=line.strip(),
+                            suggestion="Use \\& to escape",
+                            match_text=match.group(0),
                         ))
         
         return results

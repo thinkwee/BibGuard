@@ -3,13 +3,17 @@ LLM-based citation relevance evaluator.
 Supports OpenAI, Anthropic, DeepSeek, Gemini, vLLM, and Ollama backends.
 """
 import json
+import logging
 import re
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
+import time
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, Tuple
 from enum import Enum
 import os
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class LLMBackend(Enum):
@@ -21,6 +25,52 @@ class LLMBackend(Enum):
     DEEPSEEK = "deepseek"
 
 
+# Map backend → environment variable name for the API key.
+_BACKEND_ENV = {
+    LLMBackend.OPENAI: "OPENAI_API_KEY",
+    LLMBackend.ANTHROPIC: "ANTHROPIC_API_KEY",
+    LLMBackend.GEMINI: "GEMINI_API_KEY",
+    LLMBackend.DEEPSEEK: "DEEPSEEK_API_KEY",
+    LLMBackend.VLLM: "VLLM_API_KEY",
+    LLMBackend.OLLAMA: "",  # local, no key
+}
+
+# Order in which we auto-detect a usable backend when the user hasn't picked
+# one explicitly. Cheapest/fastest first.
+_AUTODETECT_ORDER = [
+    LLMBackend.GEMINI,
+    LLMBackend.OPENAI,
+    LLMBackend.DEEPSEEK,
+    LLMBackend.ANTHROPIC,
+    LLMBackend.OLLAMA,
+]
+
+
+def autodetect_backend() -> Optional[Tuple[LLMBackend, str]]:
+    """
+    Find the first backend that has credentials in the environment.
+
+    Returns (backend, api_key) or None. For Ollama we attempt a localhost
+    probe so users with `ollama serve` running get auto-selected with no
+    config.
+    """
+    for backend in _AUTODETECT_ORDER:
+        env = _BACKEND_ENV.get(backend, "")
+        if env:
+            key = os.environ.get(env, "").strip()
+            if key:
+                return backend, key
+        elif backend == LLMBackend.OLLAMA:
+            # Local probe — small timeout so absence isn't painful.
+            try:
+                r = requests.get("http://localhost:11434/api/tags", timeout=1.0)
+                if r.status_code == 200:
+                    return backend, ""
+            except requests.RequestException:
+                continue
+    return None
+
+
 @dataclass
 class EvaluationResult:
     """Result of LLM citation evaluation."""
@@ -30,15 +80,16 @@ class EvaluationResult:
     explanation: str
     context_used: str
     abstract_used: str
+    citation_role: str = ""  # baseline | method | dataset | counterexample | survey | motivation | other
     line_number: Optional[int] = None
     file_path: Optional[str] = None
     error: Optional[str] = None
-    
+
     @property
     def score_label(self) -> str:
         labels = {
             1: "Not Relevant",
-            2: "Marginally Relevant", 
+            2: "Marginally Relevant",
             3: "Somewhat Relevant",
             4: "Relevant",
             5: "Highly Relevant"
@@ -49,7 +100,7 @@ class EvaluationResult:
 class LLMEvaluator:
     """Evaluates citation relevance using LLM."""
     
-    PROMPT_TEMPLATE = """You are an expert academic reviewer. Given a citation context from a LaTeX document and the cited paper's abstract, evaluate whether this citation is appropriate and relevant.
+    PROMPT_TEMPLATE = """You are an expert academic reviewer. Given a citation context from a LaTeX document and the cited paper's abstract, evaluate whether this citation is appropriate and relevant, and identify the citation's role in the manuscript.
 
 ## Citation Context (from the manuscript):
 {context}
@@ -62,23 +113,28 @@ Evaluate the relevance and appropriateness of this citation. Consider:
 1. Does the citation support the claim being made in the context?
 2. Is the cited paper's topic related to the discussion?
 3. Is this citation necessary, or could it be replaced with a more relevant one?
+4. What is the *role* of this citation in the manuscript?
+
+## Citation roles (pick exactly one):
+- "baseline": cited paper is used/compared as a baseline or prior method.
+- "method": cited paper introduces a method that the manuscript builds on or uses directly.
+- "dataset": cited paper provides a dataset/benchmark the manuscript uses.
+- "counterexample": cited to show a contrary finding or argue against.
+- "survey": cited as a survey/overview reference.
+- "motivation": cited to motivate the problem (background, application, statistics).
+- "other": none of the above clearly applies.
 
 ## Response Format:
-Provide your response in the following JSON format:
+Respond with ONE JSON object, no other text:
 {{
-    "relevance_score": <1-5 integer>,
-    "is_relevant": <true/false>,
-    "explanation": "<brief explanation in 1-2 sentences>"
+    "relevance_score": <integer 1-5>,
+    "is_relevant": <true|false>,
+    "citation_role": "<one of: baseline|method|dataset|counterexample|survey|motivation|other>",
+    "explanation": "<1-2 sentences>"
 }}
 
-Score guide:
-- 1: Not relevant at all
-- 2: Marginally relevant
-- 3: Somewhat relevant
-- 4: Relevant and appropriate
-- 5: Highly relevant and essential
-
-STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other text."""
+Score guide: 1=Not relevant, 2=Marginally, 3=Somewhat, 4=Relevant, 5=Highly relevant.
+STRICTLY FOLLOW THE JSON FORMAT."""
 
     def __init__(
         self,
@@ -90,28 +146,32 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
         self.backend = backend
         self.api_key = api_key or os.environ.get(f"{backend.name}_API_KEY")
         
-        # Set defaults based on backend
+        # Set defaults based on backend (cheap, fast models that exist)
         if backend == LLMBackend.OPENAI:
             self.endpoint = endpoint or "https://api.openai.com/v1/chat/completions"
-            self.model = model or "gpt-5-mini"
+            self.model = model or "gpt-4o-mini"
         elif backend == LLMBackend.ANTHROPIC:
             self.endpoint = endpoint or "https://api.anthropic.com/v1/messages"
-            self.model = model or "claude-4.5-haiku"
+            self.model = model or "claude-haiku-4-5-20251001"
         elif backend == LLMBackend.DEEPSEEK:
             self.endpoint = endpoint or "https://api.deepseek.com/chat/completions"
             self.model = model or "deepseek-chat"
         elif backend == LLMBackend.OLLAMA:
             self.endpoint = endpoint or "http://localhost:11434/api/generate"
-            self.model = model or "Qwen/qwen3-4B-Instruct-2507"
+            self.model = model or "qwen2.5:3b-instruct"
         elif backend == LLMBackend.VLLM:
             self.endpoint = endpoint or "http://localhost:8000/v1/chat/completions"
-            self.model = model or "Qwen/qwen3-4B-Instruct-2507"
+            self.model = model or "Qwen/Qwen2.5-3B-Instruct"
         elif backend == LLMBackend.GEMINI:
             self.endpoint = endpoint or "https://generativelanguage.googleapis.com/v1beta/models"
-            self.model = model or "gemini-2.5-flash-lite"
+            self.model = model or "gemini-2.5-flash"
     
+    # Retry config for transient LLM failures (rate limits, server errors, JSON issues).
+    MAX_ATTEMPTS = 3
+    RETRY_BASE_DELAY = 1.5  # seconds, exponential
+
     def evaluate(self, entry_key: str, context: str, abstract: str) -> EvaluationResult:
-        """Evaluate citation relevance."""
+        """Evaluate citation relevance with retries on transient errors."""
         if not context or not abstract:
             return EvaluationResult(
                 entry_key=entry_key,
@@ -122,34 +182,51 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 abstract_used=abstract,
                 error="Missing context or abstract for evaluation"
             )
-        
-        # Don't truncate - preserve full context and abstract
+
         prompt = self.PROMPT_TEMPLATE.format(context=context, abstract=abstract)
-        
-        try:
-            if self.backend in (LLMBackend.OPENAI, LLMBackend.DEEPSEEK, LLMBackend.VLLM):
-                response = self._call_openai_compatible(prompt)
-            elif self.backend == LLMBackend.ANTHROPIC:
-                response = self._call_anthropic(prompt)
-            elif self.backend == LLMBackend.OLLAMA:
-                response = self._call_ollama(prompt)
-            elif self.backend == LLMBackend.GEMINI:
-                response = self._call_gemini(prompt)
-            else:
-                raise ValueError(f"Unknown backend: {self.backend}")
-            
-            return self._parse_response(entry_key, response, context, abstract)
-            
-        except Exception as e:
-            return EvaluationResult(
-                entry_key=entry_key,
-                relevance_score=0,
-                is_relevant=False,
-                explanation="",
-                context_used=context,
-                abstract_used=abstract,
-                error=str(e)
-            )
+
+        last_err: Optional[str] = None
+        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+            try:
+                if self.backend in (LLMBackend.OPENAI, LLMBackend.DEEPSEEK, LLMBackend.VLLM):
+                    response = self._call_openai_compatible(prompt)
+                elif self.backend == LLMBackend.ANTHROPIC:
+                    response = self._call_anthropic(prompt)
+                elif self.backend == LLMBackend.OLLAMA:
+                    response = self._call_ollama(prompt)
+                elif self.backend == LLMBackend.GEMINI:
+                    response = self._call_gemini(prompt)
+                else:
+                    raise ValueError(f"Unknown backend: {self.backend}")
+
+                parsed = self._parse_response(entry_key, response, context, abstract)
+                # Successful structured parse → return.
+                if parsed.error is None:
+                    return parsed
+                # JSON parse failed — retry with the same prompt; LLM jitter
+                # often resolves on a second pass.
+                last_err = parsed.error
+            except requests.exceptions.RequestException as e:
+                last_err = f"network: {e}"
+                # Transient: retry with backoff.
+            except Exception as e:
+                last_err = str(e)
+
+            if attempt < self.MAX_ATTEMPTS:
+                delay = self.RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                logger.debug("LLM attempt %d/%d failed (%s); retrying in %.1fs",
+                             attempt, self.MAX_ATTEMPTS, last_err, delay)
+                time.sleep(delay)
+
+        return EvaluationResult(
+            entry_key=entry_key,
+            relevance_score=0,
+            is_relevant=False,
+            explanation="",
+            context_used=context,
+            abstract_used=abstract,
+            error=last_err or "Unknown error after retries"
+        )
     
     def _call_openai_compatible(self, prompt: str) -> str:
         """Call OpenAI-compatible API (OpenAI, DeepSeek, vLLM)."""
@@ -272,24 +349,77 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 return parts[0].get("text", "")
         return ""
     
+    @staticmethod
+    def _extract_json_object(text: str) -> Optional[dict]:
+        """
+        Robust JSON extraction. Handles:
+          - bare JSON
+          - fenced ```json ... ``` blocks
+          - JSON embedded in surrounding prose
+          - nested objects (the simple `\\{[^{}]*\\}` regex misses these)
+        """
+        if not text:
+            return None
+        s = text.strip()
+
+        # Direct parse
+        try:
+            obj = json.loads(s)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+
+        # Strip Markdown code fences (```json ... ``` or ``` ... ```)
+        fence_match = re.search(r"```(?:json)?\s*(.*?)```", s, re.DOTALL | re.IGNORECASE)
+        if fence_match:
+            inner = fence_match.group(1).strip()
+            try:
+                obj = json.loads(inner)
+                if isinstance(obj, dict):
+                    return obj
+            except json.JSONDecodeError:
+                pass
+            s = inner  # fall through to brace-balance scan on inner
+
+        # Brace-balanced scan: find the first complete top-level {...}.
+        start = s.find("{")
+        while start != -1:
+            depth = 0
+            in_str = False
+            esc = False
+            for i in range(start, len(s)):
+                ch = s[i]
+                if esc:
+                    esc = False
+                    continue
+                if ch == "\\":
+                    esc = True
+                    continue
+                if ch == '"':
+                    in_str = not in_str
+                    continue
+                if in_str:
+                    continue
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        chunk = s[start:i + 1]
+                        try:
+                            obj = json.loads(chunk)
+                            if isinstance(obj, dict):
+                                return obj
+                        except json.JSONDecodeError:
+                            break
+            start = s.find("{", start + 1)
+        return None
+
     def _parse_response(self, entry_key: str, response: str, context: str, abstract: str) -> EvaluationResult:
-        """Parse LLM response."""
-        # Try to extract JSON from response
-        json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
-        
-        data = {}
-        if not json_match:
-            # Try to parse the whole response as JSON
-            try:
-                data = json.loads(response.strip())
-            except json.JSONDecodeError:
-                pass
-        else:
-            try:
-                data = json.loads(json_match.group())
-            except json.JSONDecodeError:
-                pass
-        
+        """Parse LLM response with robust JSON extraction."""
+        data = self._extract_json_object(response) or {}
+
         if not data:
              return EvaluationResult(
                 entry_key=entry_key,
@@ -301,27 +431,44 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 error="Failed to parse LLM response as JSON"
             )
         
-        # Extract fields
-        relevance_score = data.get("relevance_score", 0)
-        if isinstance(relevance_score, str):
-            try:
-                relevance_score = int(relevance_score)
-            except ValueError:
-                relevance_score = 0
-        
-        is_relevant = data.get("is_relevant", False)
+        # Extract & validate fields
+        raw_score = data.get("relevance_score", data.get("score", 0))
+        try:
+            relevance_score = int(float(raw_score))
+        except (TypeError, ValueError):
+            relevance_score = 0
+        relevance_score = max(0, min(5, relevance_score))
+
+        is_relevant = data.get("is_relevant", relevance_score >= 4)
         if isinstance(is_relevant, str):
-            is_relevant = is_relevant.lower() in ("true", "yes", "1")
-        
-        explanation = data.get("explanation", "")
-        
+            is_relevant = is_relevant.strip().lower() in ("true", "yes", "1", "y")
+
+        explanation = str(data.get("explanation", data.get("reason", ""))).strip()
+        citation_role = str(data.get("citation_role", data.get("role", ""))).strip().lower() or "other"
+        if citation_role not in {"baseline", "method", "dataset", "counterexample", "survey", "motivation", "other"}:
+            citation_role = "other"
+
+        # Sanity: a score of 0 means the LLM didn't actually return one — flag it.
+        if relevance_score == 0:
+            return EvaluationResult(
+                entry_key=entry_key,
+                relevance_score=0,
+                is_relevant=False,
+                explanation=explanation or response,
+                context_used=context,
+                abstract_used=abstract,
+                citation_role=citation_role,
+                error="LLM did not return a usable relevance_score",
+            )
+
         return EvaluationResult(
             entry_key=entry_key,
             relevance_score=relevance_score,
             is_relevant=is_relevant,
             explanation=explanation,
             context_used=context,
-            abstract_used=abstract
+            abstract_used=abstract,
+            citation_role=citation_role,
         )
     
     def test_connection(self) -> bool:
@@ -371,6 +518,7 @@ STRICTLY FOLLOW THE JSON FORMAT. Respond ONLY with the JSON object, no other tex
                 }
                 response = requests.post(url, json=payload, timeout=10)
                 return response.status_code == 200
-        except Exception:
+        except Exception as e:
+            logger.debug("LLM test_connection failed for %s: %s", self.backend.value, e)
             return False
         return False

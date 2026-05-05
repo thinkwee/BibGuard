@@ -1,6 +1,7 @@
 """
 Google Scholar search (scraping-based fallback).
 """
+import logging
 import re
 import time
 import random
@@ -9,6 +10,8 @@ from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -97,12 +100,13 @@ class ScholarFetcher:
             )
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.debug("Google Scholar query failed: %s", e, exc_info=True)
             return []
-        
+
         # Check if we're blocked
         if 'unusual traffic' in response.text.lower() or response.status_code == 429:
             self._blocked = True
-            print(f"⚠️  Google Scholar blocked after {self._request_count} requests. Skipping further Scholar queries.")
+            logger.warning("Google Scholar blocked after %s requests; skipping further queries", self._request_count)
             return []
         
         return self._parse_results(response.text, max_results)

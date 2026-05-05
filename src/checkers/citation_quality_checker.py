@@ -124,7 +124,7 @@ class CitationQualityChecker(BaseChecker):
                         severity=CheckSeverity.WARNING,
                         message="Appears to be hardcoded citation instead of \\cite",
                         line_number=line_num,
-                        line_content=line.strip()[:80],
+                        line_content=line.strip(),
                         suggestion="Use \\cite{} for proper bibliography management"
                     ))
         

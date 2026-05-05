@@ -7,8 +7,12 @@ Usage:
     python main.py --config my.yaml   # Use specified config file
     python main.py --init             # Create default config file
     python main.py --list-templates   # List available templates
+    python main.py --quick            # Skip network-bound metadata/relevance/url checks
+    python main.py --format json,html,markdown
+    python main.py --verbose          # DEBUG-level logs to stderr
 """
 import argparse
+import logging
 import sys
 from pathlib import Path
 from typing import Optional, List
@@ -19,10 +23,17 @@ from src.analyzers import MetadataComparator, UsageChecker, LLMEvaluator, Duplic
 from src.analyzers.llm_evaluator import LLMBackend
 from src.report.generator import ReportGenerator, EntryReport
 from src.utils.progress import ProgressDisplay
+from src.utils.logging_setup import setup as setup_logging
+from src.utils import http as http_layer
+from src.utils.validation import validate_bib, validate_tex, format_report
 from src.config.yaml_config import BibGuardConfig, load_config, find_config_file, create_default_config
 from src.config.workflow import WorkflowConfig, WorkflowStep as WFStep, get_default_workflow
 from src.templates.base_template import get_template, get_all_templates
 from src.checkers import CHECKER_REGISTRY, CheckResult, CheckSeverity
+from src.checkers.retraction_checker import RetractionChecker
+from src.checkers.url_checker import URLChecker
+
+logger = logging.getLogger("bibguard")
 
 
 def main():
@@ -52,8 +63,24 @@ Usage Examples:
         action="store_true",
         help="List all available conference templates"
     )
-    
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Skip network-bound checks (metadata, retraction, URL liveness, LLM)",
+    )
+    parser.add_argument(
+        "--format",
+        default=None,
+        help="Comma-separated list of output formats (markdown, html, json). Defaults to config.",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Verbose (DEBUG) logging to stderr",
+    )
+
     args = parser.parse_args()
+    setup_logging("DEBUG" if args.verbose else None)
     
     # Handle --init
     if args.init:
@@ -95,25 +122,45 @@ Usage Examples:
         print(f"Error: Failed to parse config file: {e}")
         sys.exit(1)
     
+    # CLI overrides
+    if args.quick:
+        config.bibliography.check_metadata = False
+        config.bibliography.check_relevance = False
+        config.submission_extra.url_liveness = False
+        config.submission_extra.retraction = False
+    if args.format:
+        config.output.formats = [s.strip() for s in args.format.split(",") if s.strip()]
+
+    # Configure shared HTTP layer (retry + cache + UA)
+    http_layer.configure(
+        contact_email=config.network.contact_email,
+        cache_enabled=config.network.cache_enabled,
+        cache_ttl_hours=config.network.cache_ttl_hours,
+        retry_total=config.network.retry_total,
+        retry_backoff_factor=config.network.retry_backoff_factor,
+    )
+    # Apply BIBGUARD_DISABLE_SOURCES (if set) by pre-tripping breakers.
+    http_layer.reset_breakers()
+
     # Validate required fields
     mode_dir = bool(config.files.input_dir)
-    
+
     if mode_dir:
         input_dir = config.input_dir_path
         if not input_dir.exists() or not input_dir.is_dir():
             print(f"Error: Input directory does not exist or is not a directory: {input_dir}")
             sys.exit(1)
-            
+
         tex_files = list(input_dir.rglob("*.tex"))
         bib_files = list(input_dir.rglob("*.bib"))
-        
+
         if not tex_files:
             print(f"Error: No .tex files found in {input_dir}")
             sys.exit(1)
         if not bib_files:
             print(f"Error: No .bib files found in {input_dir}")
             sys.exit(1)
-            
+
         config._tex_files = tex_files
         config._bib_files = bib_files
     else:
@@ -123,7 +170,7 @@ Usage Examples:
         if not config.files.tex:
             print("Error: tex file path not specified in config")
             sys.exit(1)
-        
+
         # Validate files exist
         if not config.bib_path.exists():
             print(f"Error: Bib file does not exist: {config.bib_path}")
@@ -131,10 +178,29 @@ Usage Examples:
         if not config.tex_path.exists():
             print(f"Error: TeX file does not exist: {config.tex_path}")
             sys.exit(1)
-        
+
         config._tex_files = [config.tex_path]
         config._bib_files = [config.bib_path]
-    
+
+    # Pre-flight content validation (R6)
+    any_fatal = False
+    for bp in config._bib_files:
+        rep = validate_bib(bp)
+        msg = format_report(rep, label=bp.name)
+        if msg:
+            print(msg)
+        if not rep.ok:
+            any_fatal = True
+    for tp in config._tex_files:
+        rep = validate_tex(tp)
+        msg = format_report(rep, label=tp.name)
+        if msg:
+            print(msg)
+        if not rep.ok:
+            any_fatal = True
+    if any_fatal:
+        sys.exit(1)
+
     # Load template if specified
     template = None
     if config.template:
@@ -143,12 +209,12 @@ Usage Examples:
             print(f"Error: Unknown template: {config.template}")
             print("Use --list-templates to see available templates")
             sys.exit(1)
-    
+
     # Run the checker
     try:
         run_checker(config, template)
     except KeyboardInterrupt:
-        print("\n\nCancelled")
+        print("\n\n[BibGuard] Interrupted. Partial reports (if any) are in the output dir.")
         sys.exit(130)
     except Exception as e:
         print(f"\nError: {e}")
@@ -250,32 +316,62 @@ def run_checker(config: BibGuardConfig, template=None):
         [str(f) for f in config._tex_files]
     )
     
+    # Build the per-checker config dict (glossary, template, etc.)
+    checker_config = {
+        "glossary_preferred": config.glossary.preferred,
+        "glossary_acronyms": config.glossary.acronyms,
+        "template": template,
+    }
+
     # Run submission quality checks
     submission_results = []
-    enabled_checkers = config.submission.get_enabled_checkers()
-    
+    enabled_checkers = list(config.submission.get_enabled_checkers())
+    if template is not None and "template" not in enabled_checkers:
+        enabled_checkers.append("template")
+
     for checker_name in enabled_checkers:
         if checker_name in CHECKER_REGISTRY:
             checker = CHECKER_REGISTRY[checker_name]()
             for tex_path_str, content in tex_contents.items():
-                results = checker.check(content, {})
-                # Tag results with file path
-                for r in results:
-                    r.file_path = tex_path_str
+                # Run the checker on this file. We deliberately do NOT tag
+                # `r.file_path = tex_path_str` because user-facing reports
+                # never expose local tex paths (basename or full).
+                results = checker.check(content, checker_config)
                 submission_results.extend(results)
-    
+
     # Set results in report generator for summary calculation
     report_gen.set_submission_results(submission_results, template)
-    
+
     # Check for duplicates (silent)
     if bib_config.check_duplicates and duplicate_detector:
         duplicate_groups = duplicate_detector.find_duplicates(entries)
         report_gen.set_duplicate_groups(duplicate_groups)
-    
+
     # Check missing citations (silent)
     if bib_config.check_usage and usage_checker:
         missing = usage_checker.get_missing_entries(entries)
         report_gen.set_missing_citations(missing)
+
+    # Retraction lookups (F1)
+    if config.submission_extra.retraction:
+        try:
+            findings = RetractionChecker().check_entries(entries)
+            report_gen.set_retraction_findings(findings)
+            if findings:
+                logger.info("Retraction check found %d flagged entries", len(findings))
+        except Exception as e:
+            logger.debug("Retraction check failed: %s", e)
+
+    # URL liveness (F2)
+    if config.submission_extra.url_liveness:
+        try:
+            url_findings = URLChecker().check_entries(entries)
+            report_gen.set_url_findings(url_findings)
+            broken = sum(1 for f in url_findings if f.status != "ok")
+            if broken:
+                logger.info("URL liveness check: %d broken URL(s)", broken)
+        except Exception as e:
+            logger.debug("URL liveness check failed: %s", e)
     
     # Process entries
     
@@ -347,41 +443,46 @@ def run_checker(config: BibGuardConfig, template=None):
     # Determine number of workers (max 10 to avoid overwhelming APIs)
     max_workers = min(10, len(entries))
     
+    interrupted = False
     with progress.progress_context(len(entries), "Processing bibliography") as prog:
         # Use ThreadPoolExecutor for parallel processing
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks
             future_to_entry = {executor.submit(process_single_entry, entry): entry for entry in entries}
-            
+
             # Process completed tasks
-            for future in as_completed(future_to_entry):
-                entry = future_to_entry[future]
-                try:
-                    entry_report, comparison_result = future.result()
-                    
-                    # Thread-safe progress update
-                    with progress_lock:
-                        report_gen.add_entry_report(entry_report)
-                        
-                        # Update progress
-                        if comparison_result and comparison_result.is_match:
-                            prog.mark_success()
-                        elif comparison_result and comparison_result.has_issues:
-                            prog.mark_warning()
-                        else:
+            try:
+                for future in as_completed(future_to_entry):
+                    entry = future_to_entry[future]
+                    try:
+                        entry_report, comparison_result = future.result()
+
+                        # Thread-safe progress update
+                        with progress_lock:
+                            report_gen.add_entry_report(entry_report)
+
+                            # Update progress
+                            if comparison_result and comparison_result.is_match:
+                                prog.mark_success()
+                            elif comparison_result and comparison_result.has_issues:
+                                prog.mark_warning()
+                            else:
+                                prog.mark_error()
+
+                            completed_count[0] += 1
+                            prog.update(entry.key, "Done", 1)
+
+                    except Exception as e:
+                        with progress_lock:
                             prog.mark_error()
-                        
-                        completed_count[0] += 1
-                        prog.update(entry.key, "Done", 1)
-                        
-                except Exception as e:
-                    with progress_lock:
-                        prog.mark_error()
-                        progress.print_error(f"Error processing {entry.key}: {e}")
-                        completed_count[0] += 1
-                        prog.update(entry.key, "Failed", 1)
-    
-    # Summary will be printed at the very end
+                            progress.print_error(f"Error processing {entry.key}: {e}")
+                            completed_count[0] += 1
+                            prog.update(entry.key, "Failed", 1)
+            except KeyboardInterrupt:
+                interrupted = True
+                logger.warning("Interrupted by user; cancelling remaining work and saving partial reports")
+                for f in future_to_entry:
+                    f.cancel()
     
     # Generate reports and organize outputs (silent)
     
@@ -395,61 +496,55 @@ def run_checker(config: BibGuardConfig, template=None):
         shutil.copy2(bib_path, output_dir / bib_path.name)
     for tex_path in config._tex_files:
         shutil.copy2(tex_path, output_dir / tex_path.name)
-    # 1. Bibliography Report
-    bib_report_path = output_dir / "bibliography_report.md"
-    report_gen.save_bibliography_report(str(bib_report_path))
-    
-    # 2. LaTeX Quality Report
-    if submission_results:
-        latex_report_path = output_dir / "latex_quality_report.md"
-        report_gen.save_latex_quality_report(
-            str(latex_report_path),
-            submission_results,
-            template
-        )
-        
-        # 3. Line-by-Line Report
-        from src.report.line_report import generate_line_report
-        line_report_path = output_dir / "line_by_line_report.md"
-        
-        # For multiple files, we generate one big report with sections
-        all_line_reports = []
-        for tex_path_str, content in tex_contents.items():
-            file_results = [r for r in submission_results if r.file_path == tex_path_str]
-            if not file_results:
-                continue
-                
-            from src.report.line_report import LineByLineReportGenerator
-            gen = LineByLineReportGenerator(content, tex_path_str)
-            gen.add_results(file_results)
-            all_line_reports.append(gen.generate())
-            
-        if all_line_reports:
-            with open(line_report_path, 'w', encoding='utf-8') as f:
-                f.write("\n\n".join(all_line_reports))
-    
-    # 4. Clean bib file (if generated earlier)
+    requested_formats = {f.lower() for f in (config.output.formats or ["markdown", "html"])}
+
+    # 1. Bibliography Report (markdown)
+    if "markdown" in requested_formats:
+        bib_report_path = output_dir / "bibliography_report.md"
+        report_gen.save_bibliography_report(str(bib_report_path))
+
+        # 2. LaTeX Quality Report (markdown)
+        if submission_results:
+            latex_report_path = output_dir / "latex_quality_report.md"
+            report_gen.save_latex_quality_report(
+                str(latex_report_path),
+                submission_results,
+                template,
+            )
+
+    # 4. Self-contained HTML (★)
+    if "html" in requested_formats:
+        try:
+            report_gen.save_html(str(output_dir / "report.html"))
+        except Exception as e:
+            logger.warning("Failed to write HTML report: %s", e)
+
+    # 5. JSON output
+    if "json" in requested_formats:
+        try:
+            report_gen.save_json(str(output_dir / "report.json"))
+        except Exception as e:
+            logger.warning("Failed to write JSON report: %s", e)
+
+    # 6. Clean bib file (if generated earlier)
     if bib_config.check_usage and usage_checker:
         used_entries = [er.entry for er in report_gen.entries if er.usage and er.usage.is_used]
         if used_entries:
             try:
                 keys_to_keep = {entry.key for entry in used_entries}
-                # If multiple bibs, we merge them into one cleaned file
-                # or just use the first one if it's single mode.
-                # For now, let's just use a default name if multiple.
                 if len(config._bib_files) == 1:
                     clean_bib_path = output_dir / f"{config._bib_files[0].stem}_only_used.bib"
                     bib_parser.filter_file(str(config._bib_files[0]), str(clean_bib_path), keys_to_keep)
                 else:
                     clean_bib_path = output_dir / "merged_only_used.bib"
-                    # We need a way to filter multiple files into one.
-                    # BibParser.filter_file currently takes one input.
-                    # Let's just write all used entries to a new file.
                     with open(clean_bib_path, 'w', encoding='utf-8') as f:
                         for entry in used_entries:
-                            f.write(entry.raw + "\n\n")
+                            f.write(getattr(entry, "raw", "") + "\n\n")
             except Exception as e:
-                pass
+                logger.debug("Failed to write cleaned bib file: %s", e)
+
+    if interrupted:
+        print("[BibGuard] Saved partial reports for completed entries.")
     
     # Print beautiful console summary
     if not config.output.quiet:
@@ -461,85 +556,40 @@ def fetch_and_compare_with_workflow(
     entry, workflow_config, arxiv_fetcher, crossref_fetcher, scholar_fetcher,
     semantic_scholar_fetcher, openalex_fetcher, dblp_fetcher, comparator
 ):
-    """Fetch metadata from online sources using the configured workflow."""
-    from src.utils.normalizer import TextNormalizer
-    
-    all_results = []
-    enabled_steps = workflow_config.get_enabled_steps()
-    
-    for step in enabled_steps:
-        result = None
-        
-        if step.name == "arxiv_id" and entry.has_arxiv and arxiv_fetcher:
-            arxiv_meta = arxiv_fetcher.fetch_by_id(entry.arxiv_id)
-            if arxiv_meta:
-                result = comparator.compare_with_arxiv(entry, arxiv_meta)
-        
-        elif step.name == "crossref_doi" and entry.doi and crossref_fetcher:
-            crossref_result = crossref_fetcher.search_by_doi(entry.doi)
-            if crossref_result:
-                result = comparator.compare_with_crossref(entry, crossref_result)
-        
-        elif step.name == "semantic_scholar" and entry.title and semantic_scholar_fetcher:
-            ss_result = None
-            if entry.doi:
-                ss_result = semantic_scholar_fetcher.fetch_by_doi(entry.doi)
-            if not ss_result:
-                ss_result = semantic_scholar_fetcher.search_by_title(entry.title)
-            if ss_result:
-                result = comparator.compare_with_semantic_scholar(entry, ss_result)
-        
-        elif step.name == "dblp" and entry.title and dblp_fetcher:
-            dblp_result = dblp_fetcher.search_by_title(entry.title)
-            if dblp_result:
-                result = comparator.compare_with_dblp(entry, dblp_result)
-        
-        elif step.name == "openalex" and entry.title and openalex_fetcher:
-            oa_result = None
-            if entry.doi:
-                oa_result = openalex_fetcher.fetch_by_doi(entry.doi)
-            if not oa_result:
-                oa_result = openalex_fetcher.search_by_title(entry.title)
-            if oa_result:
-                result = comparator.compare_with_openalex(entry, oa_result)
-        
-        elif step.name == "arxiv_title" and entry.title and arxiv_fetcher:
-            results = arxiv_fetcher.search_by_title(entry.title, max_results=3)
-            if results:
-                best_result = None
-                best_sim = 0.0
-                norm1 = TextNormalizer.normalize_for_comparison(entry.title)
-                
-                for r in results:
-                    norm2 = TextNormalizer.normalize_for_comparison(r.title)
-                    sim = TextNormalizer.similarity_ratio(norm1, norm2)
-                    if sim > best_sim:
-                        best_sim = sim
-                        best_result = r
-                
-                if best_result and best_sim > 0.5:
-                    result = comparator.compare_with_arxiv(entry, best_result)
-        
-        elif step.name == "crossref_title" and entry.title and crossref_fetcher:
-            crossref_result = crossref_fetcher.search_by_title(entry.title)
-            if crossref_result:
-                result = comparator.compare_with_crossref(entry, crossref_result)
-        
-        elif step.name == "google_scholar" and entry.title and scholar_fetcher:
+    """
+    Fetch metadata across all configured sources and pick the best match.
+
+    Delegates the heavy lifting to ``app_helper.fetch_and_compare_with_workflow``,
+    which runs identifier-based and title-based lookups in parallel and uses
+    cross-source corroboration to decide is_match. Google Scholar is consulted
+    only as a last-resort fallback because scraping is fragile and frequently
+    blocked.
+    """
+    from app_helper import fetch_and_compare_with_workflow as _parallel_lookup
+
+    primary = _parallel_lookup(
+        entry, workflow_config, arxiv_fetcher, crossref_fetcher,
+        semantic_scholar_fetcher, openalex_fetcher, dblp_fetcher, comparator,
+    )
+
+    if primary and primary.source != "unable":
+        return primary
+
+    # Last-resort Google Scholar fallback (web scraping; frequently blocked).
+    if entry.title and scholar_fetcher:
+        try:
             scholar_result = scholar_fetcher.search_by_title(entry.title)
             if scholar_result:
-                result = comparator.compare_with_scholar(entry, scholar_result)
-        
-        if result:
-            all_results.append(result)
-            if result.is_match:
-                return result
-    
-    if all_results:
-        all_results.sort(key=lambda r: r.confidence, reverse=True)
-        return all_results[0]
-    
-    return comparator.create_unable_result(entry, "Unable to find this paper in any data source")
+                return comparator.compare_with_scholar(entry, scholar_result)
+        except Exception as e:
+            logger.warning(
+                "Google Scholar fallback failed for entry=%s: %s",
+                getattr(entry, "key", "<unknown>"), e, exc_info=True,
+            )
+
+    return primary or comparator.create_unable_result(
+        entry, "Unable to find this paper in any data source"
+    )
 
 
 def get_abstract(entry, comparison_result, arxiv_fetcher):

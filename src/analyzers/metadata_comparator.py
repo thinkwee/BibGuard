@@ -18,30 +18,41 @@ from ..utils.normalizer import TextNormalizer
 class ComparisonResult:
     """Result of comparing bib entry with fetched metadata."""
     entry_key: str
-    
+
     # Title comparison
     title_match: bool
     title_similarity: float
     bib_title: str
     fetched_title: str
-    
+
     # Author comparison
     author_match: bool
     author_similarity: float
     bib_authors: list[str]
     fetched_authors: list[str]
-    
+
     # Year comparison
     year_match: bool
     bib_year: str
     fetched_year: str
-    
+
     # Overall assessment
     is_match: bool
     confidence: float
     issues: list[str]
     source: str  # 'arxiv', 'crossref', 'scholar', 'semantic_scholar', 'openalex', 'dblp', or 'unable'
-    
+
+    # F4: When an arXiv preprint has a published counterpart, surface it here.
+    published_version_hint: str = ""  # e.g. "Also published at NeurIPS 2024 (doi:10.1145/...)"
+
+    # Positive / informational notes that should NOT be counted as issues
+    # (e.g. "corroborated by S2", "year differs by ≤1, treated as match").
+    notes: list[str] = None  # type: ignore[assignment]
+
+    def __post_init__(self):
+        if self.notes is None:
+            self.notes = []
+
     @property
     def has_issues(self) -> bool:
         return len(self.issues) > 0
@@ -60,7 +71,17 @@ class MetadataComparator:
     def compare_with_arxiv(self, bib_entry: BibEntry, arxiv_meta: ArxivMetadata) -> ComparisonResult:
         """Compare bib entry with arXiv metadata."""
         issues = []
-        
+
+        # F4: Extract a published-version hint if arXiv records it.
+        published_hint = ""
+        if arxiv_meta.journal_ref or arxiv_meta.doi:
+            parts = []
+            if arxiv_meta.journal_ref:
+                parts.append(arxiv_meta.journal_ref.strip())
+            if arxiv_meta.doi:
+                parts.append(f"doi:{arxiv_meta.doi.strip()}")
+            published_hint = "Has a published version — " + " | ".join(parts)
+
         # Compare titles
         bib_title_norm = self.normalizer.normalize_for_comparison(bib_entry.title)
         arxiv_title_norm = self.normalizer.normalize_for_comparison(arxiv_meta.title)
@@ -74,7 +95,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{arxiv_meta.title}'")
         
         # Compare authors
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -84,7 +105,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(arxiv_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -92,7 +113,7 @@ class MetadataComparator:
         year_match = bib_year == arxiv_year
         
         if not year_match and bib_year and arxiv_year:
-            issues.append(f"Year mismatch: bib={bib_year}, arxiv={arxiv_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {arxiv_year}")
         
         # Overall assessment
         is_match = title_match and author_match
@@ -114,7 +135,8 @@ class MetadataComparator:
             is_match=is_match,
             confidence=confidence,
             issues=issues,
-            source="arxiv"
+            source="arxiv",
+            published_version_hint=published_hint,
         )
     
     def compare_with_scholar(self, bib_entry: BibEntry, scholar_result: ScholarResult) -> ComparisonResult:
@@ -133,7 +155,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{scholar_result.title}'")
         
         # Compare authors (Scholar format is less structured)
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -145,7 +167,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(scholar_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -153,7 +175,7 @@ class MetadataComparator:
         year_match = bib_year == scholar_year
         
         if not year_match and bib_year and scholar_year:
-            issues.append(f"Year mismatch: bib={bib_year}, scholar={scholar_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {scholar_year}")
         
         # Overall assessment
         is_match = title_match and author_match
@@ -194,7 +216,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{crossref_result.title}'")
         
         # Compare authors
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -204,7 +226,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(crossref_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -212,7 +234,7 @@ class MetadataComparator:
         year_match = bib_year == crossref_year
         
         if not year_match and bib_year and crossref_year:
-            issues.append(f"Year mismatch: bib={bib_year}, crossref={crossref_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {crossref_year}")
         
         # Overall assessment
         is_match = title_match and author_match
@@ -312,7 +334,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{ss_result.title}'")
         
         # Compare authors
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -322,7 +344,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(ss_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -330,7 +352,7 @@ class MetadataComparator:
         year_match = bib_year == ss_year
         
         if not year_match and bib_year and ss_year:
-            issues.append(f"Year mismatch: bib={bib_year}, semantic_scholar={ss_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {ss_year}")
         
         # Overall assessment
         is_match = title_match and author_match
@@ -371,7 +393,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{oa_result.title}'")
         
         # Compare authors
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -381,7 +403,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(oa_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -389,7 +411,7 @@ class MetadataComparator:
         year_match = bib_year == oa_year
         
         if not year_match and bib_year and oa_year:
-            issues.append(f"Year mismatch: bib={bib_year}, openalex={oa_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {oa_year}")
         
         # Overall assessment
         is_match = title_match and author_match
@@ -430,7 +452,7 @@ class MetadataComparator:
         title_match = title_similarity >= self.TITLE_THRESHOLD
         
         if not title_match:
-            issues.append(f"Title mismatch (similarity: {title_similarity:.2%})")
+            issues.append(f"Title mismatch. Bib: '{bib_entry.title}', Retrieved: '{dblp_result.title}'")
         
         # Compare authors
         bib_authors = self.normalizer.normalize_author_list(bib_entry.author)
@@ -440,7 +462,7 @@ class MetadataComparator:
         author_match = author_similarity >= self.AUTHOR_THRESHOLD
         
         if not author_match:
-            issues.append(f"Author mismatch (similarity: {author_similarity:.2%})")
+            issues.append(f"Author mismatch. Bib: {', '.join(bib_authors)}, Retrieved: {', '.join(dblp_authors)}")
         
         # Compare years
         bib_year = bib_entry.year.strip()
@@ -448,7 +470,7 @@ class MetadataComparator:
         year_match = bib_year == dblp_year
         
         if not year_match and bib_year and dblp_year:
-            issues.append(f"Year mismatch: bib={bib_year}, dblp={dblp_year}")
+            issues.append(f"Year mismatch. Bib: {bib_year}, Retrieved: {dblp_year}")
         
         # Overall assessment
         is_match = title_match and author_match

@@ -76,7 +76,7 @@ class SentenceChecker(BaseChecker):
                         severity=CheckSeverity.INFO,
                         message=message,
                         line_number=line_num,
-                        line_content=line.strip()[:80]
+                        line_content=line.strip()
                     ))
                     break  # One per line
             

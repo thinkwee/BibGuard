@@ -87,23 +87,30 @@ class AcronymChecker(BaseChecker):
     }
     
     def check(self, tex_content: str, config: dict = None) -> List[CheckResult]:
+        config = config or {}
         results = []
-        
+
+        # Project glossary: skip-set + auto-defined map
+        user_acronyms = dict(config.get('glossary_acronyms', {}) or {})
+        # All user-supplied acronyms are considered "known/defined" — never warn about them.
+        glossary_skip = {k.upper() for k in user_acronyms.keys()}
+        common_plus_glossary = self.COMMON_ACRONYMS | glossary_skip
+
         # Remove comments using base class method
         content = self._remove_comments(tex_content)
-        
+
         # Find all defined acronyms with their positions
         defined_acronyms = self._find_definitions(content)
-        
+
         # Find all acronym usages (excluding special contexts)
         all_usages = self._find_all_usages(content)
-        
+
         # NEW: Find potential full forms for each acronym
         acronym_full_forms = self._find_potential_full_forms(content, all_usages.keys())
-        
+
         # Check for undefined acronyms (only those with matching full forms)
         for acronym, positions in all_usages.items():
-            if acronym in self.COMMON_ACRONYMS:
+            if acronym in common_plus_glossary:
                 continue
             
             # Skip if no matching full form found in document
