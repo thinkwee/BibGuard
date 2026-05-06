@@ -1,5 +1,13 @@
+<div align="center">
+  <img src="logo.png" alt="BibGuard Logo" width="800">
+</div>
+
 # BibGuard: Bibliography & LaTeX Quality Auditor
 - Try now at https://huggingface.co/spaces/thinkwee/BibGuard !
+<div align="center">
+  <img src="gradio.png" alt="Gradio App Logo" width="800">
+</div>
+
 - **BibGuard** is a comprehensive quality-assurance tool for academic papers. It validates every bibliography entry against real-world databases, checks LaTeX submission quality, flags retracted DOIs and broken URLs, and uses an LLM (optional) to verify that cited papers actually support your claims.
 - AI coding assistants and writing tools often hallucinate plausible-sounding but non-existent references. **BibGuard** verifies the existence of every entry against multiple databases (arXiv, CrossRef, DBLP, Semantic Scholar, OpenAlex, Google Scholar) and produces a single, beautiful, self-contained HTML report you can open offline.
 
