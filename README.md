@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="BibGuard Logo" width="800">
+  <img src="logo.png" alt="BibGuard Logo" width="300">
 </div>
 
 # BibGuard: Bibliography & LaTeX Quality Auditor
